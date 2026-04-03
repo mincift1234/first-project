@@ -127,6 +127,8 @@
     }
 
     select,
+    input,
+    textarea,
     button {
       font: inherit;
       border-radius: 16px;
@@ -146,6 +148,27 @@
     select:focus {
       border-color: rgba(94, 158, 230, 0.65);
       box-shadow: 0 0 0 4px rgba(94, 158, 230, 0.14);
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-color: var(--line);
+      background: var(--field-bg);
+      color: var(--ink);
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(94, 158, 230, 0.65);
+      box-shadow: 0 0 0 4px rgba(94, 158, 230, 0.14);
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
     }
 
     button {
@@ -273,6 +296,51 @@
       font-size: 16px;
     }
 
+    .contact {
+      margin: 0 32px 32px;
+      padding: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+    }
+
+    .contact-header {
+      margin-bottom: 18px;
+    }
+
+    .contact-title {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: -0.03em;
+    }
+
+    .contact-copy,
+    .contact-note {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .contact-note {
+      margin-top: 14px;
+      font-size: 14px;
+    }
+
+    .contact-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .contact-submit {
+      justify-self: start;
+    }
+
     @keyframes rise {
       from {
         transform: translateY(8px);
@@ -298,8 +366,21 @@
         grid-template-columns: 1fr;
       }
 
+      .contact {
+        margin-left: 20px;
+        margin-right: 20px;
+      }
+
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+
       button {
         width: 100%;
+      }
+
+      .contact-submit {
+        justify-self: stretch;
       }
 
       .ball {
@@ -343,6 +424,41 @@
       <span class="legend-item"><span class="legend-dot range-red"></span>21 - 30</span>
       <span class="legend-item"><span class="legend-dot range-gray"></span>31 - 40</span>
       <span class="legend-item"><span class="legend-dot range-green"></span>41 - 45</span>
+    </section>
+
+    <section class="contact">
+      <div class="contact-header">
+        <h2 class="contact-title">제휴 문의</h2>
+        <p class="contact-copy">배너 제휴, 콘텐츠 협업, 광고 문의를 받습니다. 아래 폼은 Formspree로 연결되며 답변 가능한 이메일을 남겨야 합니다.</p>
+      </div>
+
+      <form class="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <input type="hidden" name="_subject" value="로또 번호 랜덤 생성기 제휴 문의">
+        <div class="contact-grid">
+          <div class="field">
+            <label for="partnerName">이름 또는 회사명</label>
+            <input id="partnerName" name="name" type="text" placeholder="예: 민시프트" required>
+          </div>
+          <div class="field">
+            <label for="partnerEmail">이메일</label>
+            <input id="partnerEmail" name="email" type="email" placeholder="name@example.com" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="partnerTopic">문의 유형</label>
+          <input id="partnerTopic" name="topic" type="text" placeholder="예: 배너 제휴, 광고 집행, 공동 이벤트" required>
+        </div>
+
+        <div class="field">
+          <label for="partnerMessage">문의 내용</label>
+          <textarea id="partnerMessage" name="message" placeholder="제휴 목적, 예상 일정, 예산, 연락 가능한 방법 등을 적어주세요." required></textarea>
+        </div>
+
+        <button class="primary contact-submit" type="submit">문의 보내기</button>
+      </form>
+
+      <p class="contact-note">Formspree를 연결하려면 `action`의 `YOUR_FORM_ID`를 본인 Formspree 폼 ID로 바꾸면 됩니다.</p>
     </section>
   </main>
 
