@@ -161,6 +161,31 @@ button {
   color: rgba(245, 241, 232, 0.68);
 }
 
+.sidebar-action {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 14px;
+  color: #11141a;
+  background: linear-gradient(135deg, #f7c66f, #ff9650);
+  cursor: pointer;
+}
+
+.sidebar-feedback,
+.sidebar-error {
+  margin: 10px 0 0;
+  line-height: 1.5;
+}
+
+.sidebar-feedback {
+  color: rgba(245, 241, 232, 0.78);
+}
+
+.sidebar-error {
+  color: #ff9f93;
+  word-break: break-word;
+}
+
 .content {
   display: grid;
   gap: 18px;

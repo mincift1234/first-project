@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import { collection, onSnapshot, query } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  writeBatch,
+} from 'firebase/firestore'
 import { db } from './firebase'
 import {
   demoAlerts,
@@ -471,6 +478,70 @@ export default function App() {
   const [packages, setPackages] = useState(demoPackages)
   const [notes, setNotes] = useState(demoNotes)
   const [syncStatus, setSyncStatus] = useState('Firebase 연결 중')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [seedStatus, setSeedStatus] = useState('')
+
+  async function seedFirestore() {
+    setSeedStatus('샘플 데이터 쓰는 중')
+    setErrorMessage('')
+
+    try {
+      const batch = writeBatch(db)
+
+      demoMembers.forEach((member, index) => {
+        batch.set(doc(db, 'members', `member-${index + 1}`), {
+          name: member.name,
+          phone: member.phone,
+          pass: member.pass,
+          left: member.left,
+          expiry: member.expiry,
+          status: member.status,
+          createdAt: serverTimestamp(),
+        })
+      })
+
+      demoSessions.forEach((session, index) => {
+        batch.set(doc(db, 'appointments', `appointment-${index + 1}`), {
+          member: session.member,
+          goal: session.goal,
+          trainer: session.trainer,
+          status: session.status,
+          time: session.time,
+          createdAt: serverTimestamp(),
+        })
+      })
+
+      demoPackages.forEach((item, index) => {
+        batch.set(doc(db, 'packages', `package-${index + 1}`), {
+          name: item.name,
+          price:
+            typeof item.price === 'string'
+              ? Number(item.price.replace(/[^\d]/g, '')) || 0
+              : item.price,
+          rule: item.rule,
+          sales: item.sales,
+          createdAt: serverTimestamp(),
+        })
+      })
+
+      demoNotes.forEach((note, index) => {
+        batch.set(doc(db, 'sessionNotes', `note-${index + 1}`), {
+          member: note.member,
+          title: note.title,
+          body: note.body,
+          updatedAt: serverTimestamp(),
+        })
+      })
+
+      await batch.commit()
+      setSeedStatus('샘플 데이터 입력 완료')
+      setSyncStatus('Firebase 동기화 완료')
+    } catch (error) {
+      console.error('Firebase seed failed:', error)
+      setSeedStatus('샘플 데이터 입력 실패')
+      setErrorMessage(error?.message ?? '샘플 데이터 입력 중 오류가 발생했습니다.')
+    }
+  }
 
   useEffect(() => {
     const unsubscribers = []
@@ -494,8 +565,10 @@ export default function App() {
           memberLoaded = true
           updateStatus()
         },
-        () => {
+        (error) => {
+          console.error('members read failed:', error)
           setSyncStatus('Firebase 읽기 실패')
+          setErrorMessage(error?.message ?? 'members 컬렉션 읽기에 실패했습니다.')
         },
       ),
     )
@@ -509,8 +582,10 @@ export default function App() {
           appointmentLoaded = true
           updateStatus()
         },
-        () => {
+        (error) => {
+          console.error('appointments read failed:', error)
           setSyncStatus('Firebase 읽기 실패')
+          setErrorMessage(error?.message ?? 'appointments 컬렉션 읽기에 실패했습니다.')
         },
       ),
     )
@@ -524,8 +599,10 @@ export default function App() {
           packageLoaded = true
           updateStatus()
         },
-        () => {
+        (error) => {
+          console.error('packages read failed:', error)
           setSyncStatus('Firebase 읽기 실패')
+          setErrorMessage(error?.message ?? 'packages 컬렉션 읽기에 실패했습니다.')
         },
       ),
     )
@@ -539,8 +616,10 @@ export default function App() {
           noteLoaded = true
           updateStatus()
         },
-        () => {
+        (error) => {
+          console.error('sessionNotes read failed:', error)
           setSyncStatus('Firebase 읽기 실패')
+          setErrorMessage(error?.message ?? 'sessionNotes 컬렉션 읽기에 실패했습니다.')
         },
       ),
     )
@@ -605,6 +684,11 @@ export default function App() {
             <p className="sidebar-label">오늘 매출</p>
             <strong>₩1,240,000</strong>
             <span>{syncStatus}</span>
+            <button className="sidebar-action" onClick={seedFirestore} type="button">
+              샘플 데이터 넣기
+            </button>
+            {seedStatus ? <p className="sidebar-feedback">{seedStatus}</p> : null}
+            {errorMessage ? <p className="sidebar-error">{errorMessage}</p> : null}
           </div>
         </aside>
 
