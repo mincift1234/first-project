@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  addDoc,
   collection,
   doc,
   onSnapshot,
@@ -8,6 +9,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { AppointmentForm, MemberForm, NoteForm, PackageForm } from './forms'
 import {
   demoAlerts,
   demoCalendarDays,
@@ -26,6 +28,36 @@ const menuItems = [
 ]
 
 const weekdayLabels = ['일', '월', '화', '수', '목', '금', '토']
+
+const initialMemberForm = {
+  name: '',
+  phone: '',
+  pass: '',
+  remainingSessions: '',
+  expiryDate: '',
+  status: '정상',
+}
+
+const initialAppointmentForm = {
+  member: '',
+  trainer: '',
+  goal: '',
+  startAt: '',
+  status: '예정',
+}
+
+const initialPackageForm = {
+  name: '',
+  price: '',
+  validDays: '',
+  monthlySales: '',
+}
+
+const initialNoteForm = {
+  member: '',
+  title: '',
+  body: '',
+}
 
 function toDate(value) {
   if (!value) return null
@@ -244,7 +276,7 @@ function SectionHeader({ eyebrow, title, action, status }) {
   )
 }
 
-function DashboardView({ alerts, members, sessions, stats, syncStatus }) {
+function DashboardView({ alerts, members, sessions, stats, syncStatus, onQuickAction }) {
   return (
     <>
       <SectionHeader
@@ -253,8 +285,12 @@ function DashboardView({ alerts, members, sessions, stats, syncStatus }) {
         status={syncStatus}
         action={
           <>
-            <button className="secondary-button">회원 추가</button>
-            <button className="primary-button">수업 기록 입력</button>
+            <button className="secondary-button" onClick={() => onQuickAction('members')} type="button">
+              회원 추가
+            </button>
+            <button className="primary-button" onClick={() => onQuickAction('schedule')} type="button">
+              수업 기록 입력
+            </button>
           </>
         }
       />
@@ -272,7 +308,9 @@ function DashboardView({ alerts, members, sessions, stats, syncStatus }) {
               <p className="panel-kicker">Today</p>
               <h3>수업 스케줄</h3>
             </div>
-            <button className="text-button">전체 보기</button>
+            <button className="text-button" onClick={() => onQuickAction('schedule')} type="button">
+              전체 보기
+            </button>
           </div>
 
           <div className="session-list">
@@ -314,7 +352,9 @@ function DashboardView({ alerts, members, sessions, stats, syncStatus }) {
               <p className="panel-kicker">Members</p>
               <h3>회원권 현황</h3>
             </div>
-            <button className="text-button">회원 전체 보기</button>
+            <button className="text-button" onClick={() => onQuickAction('members')} type="button">
+              회원 전체 보기
+            </button>
           </div>
 
           <div className="member-list">
@@ -345,7 +385,7 @@ function DashboardView({ alerts, members, sessions, stats, syncStatus }) {
             <li>Firestore 컬렉션 `members`, `appointments`, `packages`, `sessionNotes` 구독</li>
             <li>컬렉션이 비어 있으면 데모 데이터로 화면 유지</li>
             <li>실데이터가 들어오면 대시보드 수치와 카드가 자동 갱신</li>
-            <li>다음 단계로 Auth와 쓰기 폼을 바로 붙일 수 있음</li>
+            <li>회원, 예약, 메모, 이용권을 섹션별 폼에서 바로 생성 가능</li>
           </ul>
         </article>
       </section>
@@ -353,17 +393,19 @@ function DashboardView({ alerts, members, sessions, stats, syncStatus }) {
   )
 }
 
-function MembersView({ members }) {
+function MembersView({ members, form, onChange, onSubmit, feedback }) {
   return (
     <>
       <SectionHeader
         eyebrow="Members"
         title="회원 관리"
-        action={<button className="primary-button">신규 회원 등록</button>}
+        action={<button className="primary-button" onClick={onSubmit} type="button">신규 회원 등록</button>}
       />
-      <section className="panel stacked-panel">
+      <section className="split-layout">
+        <MemberForm form={form} onChange={onChange} onSubmit={onSubmit} feedback={feedback} />
+        <section className="panel stacked-panel">
         <div className="toolbar">
-          <div className="search-chip">이름, 연락처, 이용권으로 검색</div>
+          <div className="search-chip">실시간 회원 목록</div>
           <div className="toolbar-actions">
             <button className="secondary-button">재등록 필요만 보기</button>
             <button className="secondary-button">엑셀 다운로드</button>
@@ -387,12 +429,13 @@ function MembersView({ members }) {
             </div>
           ))}
         </div>
+        </section>
       </section>
     </>
   )
 }
 
-function ScheduleView({ calendarDays }) {
+function ScheduleView({ calendarDays, form, onChange, onSubmit, feedback }) {
   return (
     <>
       <SectionHeader
@@ -401,11 +444,13 @@ function ScheduleView({ calendarDays }) {
         action={
           <>
             <button className="secondary-button">트레이너 필터</button>
-            <button className="primary-button">예약 추가</button>
+            <button className="primary-button" onClick={onSubmit} type="button">예약 추가</button>
           </>
         }
       />
-      <section className="calendar-grid">
+      <section className="split-layout">
+        <AppointmentForm form={form} onChange={onChange} onSubmit={onSubmit} feedback={feedback} />
+        <section className="calendar-grid">
         {calendarDays.map((day) => (
           <article className="panel calendar-card" key={`${day.day}-${day.date}`}>
             <div className="calendar-head">
@@ -419,20 +464,23 @@ function ScheduleView({ calendarDays }) {
             </div>
           </article>
         ))}
+        </section>
       </section>
     </>
   )
 }
 
-function PassesView({ packages }) {
+function PassesView({ packages, form, onChange, onSubmit, feedback }) {
   return (
     <>
       <SectionHeader
         eyebrow="Packages"
         title="이용권 관리"
-        action={<button className="primary-button">이용권 상품 추가</button>}
+        action={<button className="primary-button" onClick={onSubmit} type="button">이용권 상품 추가</button>}
       />
-      <section className="split-grid">
+      <section className="split-layout">
+        <PackageForm form={form} onChange={onChange} onSubmit={onSubmit} feedback={feedback} />
+        <section className="split-grid">
         {packages.map((item) => (
           <article className="panel package-card" key={item.id ?? item.name}>
             <p className="panel-kicker">Package</p>
@@ -442,20 +490,23 @@ function PassesView({ packages }) {
             <p className="package-meta">{item.sales}</p>
           </article>
         ))}
+        </section>
       </section>
     </>
   )
 }
 
-function NotesView({ notes }) {
+function NotesView({ notes, form, onChange, onSubmit, feedback }) {
   return (
     <>
       <SectionHeader
         eyebrow="Session Notes"
         title="상담 메모"
-        action={<button className="primary-button">메모 작성</button>}
+        action={<button className="primary-button" onClick={onSubmit} type="button">메모 작성</button>}
       />
-      <section className="split-grid">
+      <section className="split-layout">
+        <NoteForm form={form} onChange={onChange} onSubmit={onSubmit} feedback={feedback} />
+        <section className="split-grid">
         {notes.map((note) => (
           <article className="panel note-card" key={note.id ?? `${note.member}-${note.updatedAt}`}>
             <div className="note-head">
@@ -466,6 +517,7 @@ function NotesView({ notes }) {
             <p className="note-body">{note.body}</p>
           </article>
         ))}
+        </section>
       </section>
     </>
   )
@@ -480,6 +532,21 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState('Firebase 연결 중')
   const [errorMessage, setErrorMessage] = useState('')
   const [seedStatus, setSeedStatus] = useState('')
+  const [memberForm, setMemberForm] = useState(initialMemberForm)
+  const [appointmentForm, setAppointmentForm] = useState(initialAppointmentForm)
+  const [packageForm, setPackageForm] = useState(initialPackageForm)
+  const [noteForm, setNoteForm] = useState(initialNoteForm)
+  const [memberFeedback, setMemberFeedback] = useState('')
+  const [appointmentFeedback, setAppointmentFeedback] = useState('')
+  const [packageFeedback, setPackageFeedback] = useState('')
+  const [noteFeedback, setNoteFeedback] = useState('')
+
+  function handleFieldChange(setter) {
+    return (event) => {
+      const { name, value } = event.target
+      setter((prev) => ({ ...prev, [name]: value }))
+    }
+  }
 
   async function seedFirestore() {
     setSeedStatus('샘플 데이터 쓰는 중')
@@ -540,6 +607,97 @@ export default function App() {
       console.error('Firebase seed failed:', error)
       setSeedStatus('샘플 데이터 입력 실패')
       setErrorMessage(error?.message ?? '샘플 데이터 입력 중 오류가 발생했습니다.')
+    }
+  }
+
+  async function submitMember() {
+    if (!memberForm.name.trim() || !memberForm.phone.trim()) {
+      setMemberFeedback('회원 이름과 연락처는 필수입니다.')
+      return
+    }
+
+    try {
+      await addDoc(collection(db, 'members'), {
+        name: memberForm.name.trim(),
+        phone: memberForm.phone.trim(),
+        pass: memberForm.pass.trim() || '이용권 미설정',
+        remainingSessions: Number(memberForm.remainingSessions) || 0,
+        expiryDate: memberForm.expiryDate ? new Date(memberForm.expiryDate) : null,
+        status: memberForm.status,
+        createdAt: serverTimestamp(),
+      })
+      setMemberFeedback('회원이 저장되었습니다.')
+      setMemberForm(initialMemberForm)
+    } catch (error) {
+      console.error('member create failed:', error)
+      setMemberFeedback(error?.message ?? '회원 저장에 실패했습니다.')
+    }
+  }
+
+  async function submitAppointment() {
+    if (!appointmentForm.member.trim() || !appointmentForm.startAt) {
+      setAppointmentFeedback('회원 이름과 예약 일시는 필수입니다.')
+      return
+    }
+
+    try {
+      await addDoc(collection(db, 'appointments'), {
+        member: appointmentForm.member.trim(),
+        trainer: appointmentForm.trainer.trim() || '-',
+        goal: appointmentForm.goal.trim() || '목표 미설정',
+        startAt: new Date(appointmentForm.startAt),
+        status: appointmentForm.status,
+        createdAt: serverTimestamp(),
+      })
+      setAppointmentFeedback('예약이 저장되었습니다.')
+      setAppointmentForm(initialAppointmentForm)
+    } catch (error) {
+      console.error('appointment create failed:', error)
+      setAppointmentFeedback(error?.message ?? '예약 저장에 실패했습니다.')
+    }
+  }
+
+  async function submitPackage() {
+    if (!packageForm.name.trim() || !packageForm.price) {
+      setPackageFeedback('상품명과 가격은 필수입니다.')
+      return
+    }
+
+    try {
+      await addDoc(collection(db, 'packages'), {
+        name: packageForm.name.trim(),
+        price: Number(packageForm.price) || 0,
+        validDays: Number(packageForm.validDays) || 0,
+        monthlySales: Number(packageForm.monthlySales) || 0,
+        createdAt: serverTimestamp(),
+      })
+      setPackageFeedback('이용권 상품이 저장되었습니다.')
+      setPackageForm(initialPackageForm)
+    } catch (error) {
+      console.error('package create failed:', error)
+      setPackageFeedback(error?.message ?? '이용권 저장에 실패했습니다.')
+    }
+  }
+
+  async function submitNote() {
+    if (!noteForm.member.trim() || !noteForm.title.trim()) {
+      setNoteFeedback('회원 이름과 메모 제목은 필수입니다.')
+      return
+    }
+
+    try {
+      await addDoc(collection(db, 'sessionNotes'), {
+        member: noteForm.member.trim(),
+        title: noteForm.title.trim(),
+        body: noteForm.body.trim(),
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      })
+      setNoteFeedback('메모가 저장되었습니다.')
+      setNoteForm(initialNoteForm)
+    } catch (error) {
+      console.error('note create failed:', error)
+      setNoteFeedback(error?.message ?? '메모 저장에 실패했습니다.')
     }
   }
 
@@ -641,12 +799,45 @@ export default function App() {
         sessions={sessions}
         stats={stats}
         syncStatus={syncStatus}
+        onQuickAction={setActiveView}
       />
     ),
-    members: <MembersView members={members} />,
-    schedule: <ScheduleView calendarDays={calendarDays} />,
-    passes: <PassesView packages={packages} />,
-    notes: <NotesView notes={notes} />,
+    members: (
+      <MembersView
+        members={members}
+        form={memberForm}
+        onChange={handleFieldChange(setMemberForm)}
+        onSubmit={submitMember}
+        feedback={memberFeedback}
+      />
+    ),
+    schedule: (
+      <ScheduleView
+        calendarDays={calendarDays}
+        form={appointmentForm}
+        onChange={handleFieldChange(setAppointmentForm)}
+        onSubmit={submitAppointment}
+        feedback={appointmentFeedback}
+      />
+    ),
+    passes: (
+      <PassesView
+        packages={packages}
+        form={packageForm}
+        onChange={handleFieldChange(setPackageForm)}
+        onSubmit={submitPackage}
+        feedback={packageFeedback}
+      />
+    ),
+    notes: (
+      <NotesView
+        notes={notes}
+        form={noteForm}
+        onChange={handleFieldChange(setNoteForm)}
+        onSubmit={submitNote}
+        feedback={noteFeedback}
+      />
+    ),
   }
 
   return (

@@ -191,6 +191,12 @@ button {
   gap: 18px;
 }
 
+.split-layout {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 16px;
+}
+
 .stacked-panel {
   display: grid;
   gap: 18px;
@@ -253,6 +259,54 @@ button {
   color: #79e5cb;
   background: rgba(76, 201, 172, 0.12);
   font-size: 0.92rem;
+}
+
+.form-panel {
+  align-self: start;
+}
+
+.form-description {
+  margin: 0 0 16px;
+  color: rgba(245, 241, 232, 0.72);
+  line-height: 1.6;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.app-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  color: #f5f1e8;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.app-input::placeholder {
+  color: rgba(245, 241, 232, 0.42);
+}
+
+.app-textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
+.form-submit {
+  margin-top: 16px;
+}
+
+.form-feedback {
+  margin: 14px 0 0;
+  color: #79e5cb;
+  line-height: 1.5;
 }
 
 .stats-grid {
@@ -529,6 +583,7 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .split-layout,
   .stats-grid,
   .panel-grid,
   .calendar-grid,
@@ -564,6 +619,7 @@ button {
 
   .stats-grid,
   .panel-grid,
+  .split-layout,
   .calendar-grid,
   .split-grid {
     grid-template-columns: 1fr;
@@ -578,6 +634,7 @@ button {
 
   .toolbar,
   .toolbar-actions,
+  .form-grid,
   .table-row {
     grid-template-columns: 1fr;
     display: grid;
