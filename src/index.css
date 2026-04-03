@@ -90,6 +90,11 @@ button {
   border-radius: 28px;
 }
 
+.sidebar-top {
+  display: grid;
+  gap: 10px;
+}
+
 .brand-mark,
 .eyebrow,
 .panel-kicker,
@@ -157,6 +162,11 @@ button {
 }
 
 .content {
+  display: grid;
+  gap: 18px;
+}
+
+.stacked-panel {
   display: grid;
   gap: 18px;
 }
@@ -357,13 +367,140 @@ button {
   line-height: 1.8;
 }
 
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.search-chip {
+  flex: 1;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 16px;
+  color: rgba(245, 241, 232, 0.58);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.data-table {
+  display: grid;
+  gap: 10px;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.2fr 0.8fr;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.table-head-row {
+  color: rgba(245, 241, 232, 0.56);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.mini-badge {
+  justify-self: start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mini-badge.재등록\ 필요 {
+  color: #ffcc72;
+  background: rgba(255, 196, 93, 0.16);
+}
+
+.mini-badge.정상 {
+  color: #79e5cb;
+  background: rgba(76, 201, 172, 0.16);
+}
+
+.mini-badge.추적 {
+  color: #a8c8ff;
+  background: rgba(67, 124, 255, 0.16);
+}
+
+.calendar-grid,
+.split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.calendar-card {
+  min-height: 220px;
+}
+
+.calendar-head,
+.note-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.calendar-head span,
+.note-head span {
+  color: rgba(245, 241, 232, 0.62);
+}
+
+.calendar-slots {
+  display: grid;
+  gap: 10px;
+}
+
+.slot-pill {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(245, 241, 232, 0.85);
+}
+
+.package-card h3,
+.note-card h3 {
+  margin: 0 0 12px;
+}
+
+.price-text {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 2rem;
+}
+
+.package-meta,
+.note-body {
+  margin: 0;
+  color: rgba(245, 241, 232, 0.72);
+  line-height: 1.7;
+}
+
 @media (max-width: 1180px) {
   .dashboard-frame {
     grid-template-columns: 1fr;
   }
 
   .stats-grid,
-  .panel-grid {
+  .panel-grid,
+  .calendar-grid,
+  .split-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .table-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -390,7 +527,9 @@ button {
   }
 
   .stats-grid,
-  .panel-grid {
+  .panel-grid,
+  .calendar-grid,
+  .split-grid {
     grid-template-columns: 1fr;
   }
 
@@ -399,6 +538,13 @@ button {
   .member-row {
     flex-direction: column;
     align-items: start;
+  }
+
+  .toolbar,
+  .toolbar-actions,
+  .table-row {
+    grid-template-columns: 1fr;
+    display: grid;
   }
 
   .member-meta {
