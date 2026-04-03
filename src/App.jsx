@@ -1,81 +1,14 @@
-import { useState } from 'react'
-
-const alerts = [
-  { member: '김하늘', detail: '잔여 2회 · 4월 8일 만료', tone: 'urgent' },
-  { member: '이도윤', detail: '7일째 미예약', tone: 'idle' },
-  { member: '박서준', detail: '재등록 상담 필요', tone: 'renewal' },
-]
-
-const sessions = [
-  { time: '09:00', member: '정유진', goal: '하체 밸런스', trainer: '민코치', status: '완료' },
-  { time: '11:30', member: '김민재', goal: '체지방 감량', trainer: '민코치', status: '예정' },
-  { time: '14:00', member: '최수아', goal: '재활 운동', trainer: '윤코치', status: '예정' },
-  { time: '19:30', member: '오세훈', goal: '상체 근력', trainer: '민코치', status: '대기' },
-]
-
-const members = [
-  {
-    name: '정유진',
-    phone: '010-2211-9001',
-    pass: '20회권',
-    left: '12회 남음',
-    expiry: '4월 28일',
-    status: '정상',
-  },
-  {
-    name: '김민재',
-    phone: '010-3345-7722',
-    pass: '10회권',
-    left: '2회 남음',
-    expiry: '4월 8일',
-    status: '재등록 필요',
-  },
-  {
-    name: '최수아',
-    phone: '010-5598-1313',
-    pass: '주 2회 1개월',
-    left: '이번 주 1회 가능',
-    expiry: '4월 30일',
-    status: '정상',
-  },
-  {
-    name: '오세훈',
-    phone: '010-9981-7734',
-    pass: '30회권',
-    left: '5회 남음',
-    expiry: '5월 9일',
-    status: '추적',
-  },
-]
-
-const packages = [
-  { name: '10회 집중 감량', price: '₩550,000', rule: '60일', sales: '이번 달 4건' },
-  { name: '20회 체형 교정', price: '₩980,000', rule: '90일', sales: '이번 달 7건' },
-  { name: '주 2회 1개월', price: '₩390,000', rule: '30일', sales: '이번 달 5건' },
-]
-
-const notes = [
-  {
-    member: '정유진',
-    title: '스쿼트 하강 구간 안정화 필요',
-    body: '무릎 내회전이 있어 고블릿 스쿼트와 밴드 워크를 먼저 유지.',
-    updatedAt: '오늘 09:58',
-  },
-  {
-    member: '김민재',
-    title: '식단 피드백 전달',
-    body: '평일 야식 빈도 높음. 수업 후 단백질 섭취 루틴 고정 제안.',
-    updatedAt: '어제 18:20',
-  },
-]
-
-const calendarDays = [
-  { day: '월', date: '4/7', slots: ['09:00 정유진', '11:30 김민재', '19:30 오세훈'] },
-  { day: '화', date: '4/8', slots: ['10:00 신규 상담', '14:00 최수아'] },
-  { day: '수', date: '4/9', slots: ['09:00 정유진', '18:00 김하늘'] },
-  { day: '목', date: '4/10', slots: ['11:00 김민재', '20:00 오세훈'] },
-  { day: '금', date: '4/11', slots: ['08:00 바디체크', '13:00 최수아'] },
-]
+import { useEffect, useState } from 'react'
+import { collection, onSnapshot, query } from 'firebase/firestore'
+import { db } from './firebase'
+import {
+  demoAlerts,
+  demoCalendarDays,
+  demoMembers,
+  demoNotes,
+  demoPackages,
+  demoSessions,
+} from './demoData'
 
 const menuItems = [
   { id: 'dashboard', label: '대시보드' },
@@ -84,6 +17,200 @@ const menuItems = [
   { id: 'passes', label: '이용권' },
   { id: 'notes', label: '상담 메모' },
 ]
+
+const weekdayLabels = ['일', '월', '화', '수', '목', '금', '토']
+
+function toDate(value) {
+  if (!value) return null
+  if (value instanceof Date) return value
+  if (typeof value?.toDate === 'function') return value.toDate()
+
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+function formatShortDate(value) {
+  const date = toDate(value)
+  if (!date) return '-'
+
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`
+}
+
+function formatCalendarDate(value) {
+  const date = toDate(value)
+  if (!date) return '미정'
+
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+function formatTime(value) {
+  const date = toDate(value)
+  if (!date) return typeof value === 'string' ? value : '--:--'
+
+  return date.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
+
+function formatCurrency(value) {
+  if (typeof value === 'string') return value
+  if (typeof value !== 'number') return '₩0'
+
+  return new Intl.NumberFormat('ko-KR', {
+    style: 'currency',
+    currency: 'KRW',
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
+function formatRelativeUpdate(value) {
+  const date = toDate(value)
+  if (!date) return '업데이트 없음'
+
+  return date.toLocaleString('ko-KR', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function mapMember(doc) {
+  const data = doc.data()
+
+  return {
+    id: doc.id,
+    name: data.name ?? '이름 없음',
+    phone: data.phone ?? '-',
+    pass: data.pass ?? data.passName ?? '이용권 미설정',
+    left:
+      data.left ??
+      (typeof data.remainingSessions === 'number' ? `${data.remainingSessions}회 남음` : '-'),
+    expiry: data.expiry ?? formatShortDate(data.expiryDate),
+    status: data.status ?? '정상',
+  }
+}
+
+function mapAppointment(doc) {
+  const data = doc.data()
+
+  return {
+    id: doc.id,
+    startAt: data.startAt ?? data.dateTime ?? null,
+    time: data.time ?? formatTime(data.startAt ?? data.dateTime),
+    member: data.member ?? data.memberName ?? '미정',
+    goal: data.goal ?? data.program ?? '목표 미설정',
+    trainer: data.trainer ?? data.trainerName ?? '-',
+    status: data.status ?? '예정',
+  }
+}
+
+function mapPackage(doc) {
+  const data = doc.data()
+
+  return {
+    id: doc.id,
+    name: data.name ?? '이용권',
+    price: formatCurrency(data.price),
+    rule: data.rule ?? (data.validDays ? `${data.validDays}일` : '-'),
+    sales:
+      data.sales ??
+      (typeof data.monthlySales === 'number' ? `이번 달 ${data.monthlySales}건` : '판매 데이터 없음'),
+  }
+}
+
+function mapNote(doc) {
+  const data = doc.data()
+
+  return {
+    id: doc.id,
+    member: data.member ?? data.memberName ?? '회원 미지정',
+    title: data.title ?? '메모 제목 없음',
+    body: data.body ?? data.memo ?? '',
+    updatedAt: formatRelativeUpdate(data.updatedAt ?? data.createdAt),
+  }
+}
+
+function buildAlerts(memberData) {
+  const renewalMembers = memberData.filter((member) => member.status.includes('재등록'))
+  const lowMembers = memberData.filter((member) => member.left.includes('2회') || member.left.includes('3회'))
+
+  const result = [
+    ...renewalMembers.slice(0, 2).map((member) => ({
+      member: member.name,
+      detail: `${member.left} · ${member.expiry}`,
+      tone: 'renewal',
+    })),
+    ...lowMembers.slice(0, 1).map((member) => ({
+      member: member.name,
+      detail: `${member.left} · ${member.expiry}`,
+      tone: 'urgent',
+    })),
+  ]
+
+  return result.length > 0 ? result : demoAlerts
+}
+
+function buildCalendar(appointments) {
+  const grouped = appointments
+    .filter((appointment) => toDate(appointment.startAt))
+    .sort((a, b) => toDate(a.startAt) - toDate(b.startAt))
+    .slice(0, 10)
+    .reduce((acc, appointment) => {
+      const date = toDate(appointment.startAt)
+      const key = date.toDateString()
+
+      if (!acc[key]) {
+        acc[key] = {
+          day: weekdayLabels[date.getDay()],
+          date: formatCalendarDate(date),
+          slots: [],
+        }
+      }
+
+      acc[key].slots.push(`${formatTime(date)} ${appointment.member}`)
+
+      return acc
+    }, {})
+
+  const items = Object.values(grouped)
+  return items.length > 0 ? items : demoCalendarDays
+}
+
+function buildStats(memberData, appointmentData) {
+  const sessionsToday = appointmentData.length
+  const completed = appointmentData.filter((item) => item.status === '완료').length
+  const scheduled = appointmentData.filter((item) => item.status === '예정').length
+  const waiting = appointmentData.filter((item) => item.status === '대기').length
+  const renewalRisk = memberData.filter((item) => item.status.includes('재등록')).length
+  const tracking = memberData.filter((item) => item.status.includes('추적')).length
+  const noShows = appointmentData.filter((item) => item.status === '노쇼').length
+
+  return [
+    {
+      label: '오늘 수업',
+      value: `${sessionsToday || demoSessions.length}건`,
+      meta: `완료 ${completed}건 · 예정 ${scheduled}건 · 대기 ${waiting}건`,
+    },
+    {
+      label: '재등록 위험',
+      value: `${renewalRisk || 0}명`,
+      meta: '잔여 횟수와 만료일이 임박한 회원',
+    },
+    {
+      label: '추적 회원',
+      value: `${tracking || 0}명`,
+      meta: '최근 예약 공백이 있는 회원',
+    },
+    {
+      label: '이번 주 노쇼',
+      value: `${noShows || 0}건`,
+      meta: '실제 운영 데이터 기준',
+    },
+  ]
+}
 
 function StatCard({ label, value, meta }) {
   return (
@@ -95,24 +222,28 @@ function StatCard({ label, value, meta }) {
   )
 }
 
-function SectionHeader({ eyebrow, title, action }) {
+function SectionHeader({ eyebrow, title, action, status }) {
   return (
     <header className="hero-panel">
       <div>
         <p className="eyebrow">{eyebrow}</p>
         <h2>{title}</h2>
       </div>
-      <div className="hero-actions">{action}</div>
+      <div className="hero-actions">
+        {status ? <span className="sync-badge">{status}</span> : null}
+        {action}
+      </div>
     </header>
   )
 }
 
-function DashboardView() {
+function DashboardView({ alerts, members, sessions, stats, syncStatus }) {
   return (
     <>
       <SectionHeader
         eyebrow="Trainer Console"
         title="오늘 운영 현황"
+        status={syncStatus}
         action={
           <>
             <button className="secondary-button">회원 추가</button>
@@ -122,10 +253,9 @@ function DashboardView() {
       />
 
       <section className="stats-grid">
-        <StatCard label="오늘 수업" value="8건" meta="완료 2건 · 예정 5건 · 대기 1건" />
-        <StatCard label="재등록 위험" value="6명" meta="잔여 3회 이하 회원" />
-        <StatCard label="미예약 회원" value="11명" meta="최근 7일간 예약 없음" />
-        <StatCard label="이번 주 노쇼" value="2건" meta="전주 대비 1건 감소" />
+        {stats.map((stat) => (
+          <StatCard key={stat.label} {...stat} />
+        ))}
       </section>
 
       <section className="panel-grid">
@@ -139,8 +269,8 @@ function DashboardView() {
           </div>
 
           <div className="session-list">
-            {sessions.map((session) => (
-              <div className="session-row" key={`${session.time}-${session.member}`}>
+            {sessions.slice(0, 4).map((session) => (
+              <div className="session-row" key={session.id ?? `${session.time}-${session.member}`}>
                 <div className="session-time">{session.time}</div>
                 <div className="session-main">
                   <strong>{session.member}</strong>
@@ -163,7 +293,7 @@ function DashboardView() {
 
           <div className="alert-list">
             {alerts.map((alert) => (
-              <div className={`alert-card ${alert.tone}`} key={alert.member}>
+              <div className={`alert-card ${alert.tone}`} key={`${alert.member}-${alert.detail}`}>
                 <strong>{alert.member}</strong>
                 <span>{alert.detail}</span>
               </div>
@@ -182,7 +312,7 @@ function DashboardView() {
 
           <div className="member-list">
             {members.slice(0, 3).map((member) => (
-              <div className="member-row" key={member.name}>
+              <div className="member-row" key={member.id ?? member.name}>
                 <div>
                   <strong>{member.name}</strong>
                   <p>{member.pass}</p>
@@ -199,16 +329,16 @@ function DashboardView() {
         <article className="panel insight-panel">
           <div className="panel-head">
             <div>
-              <p className="panel-kicker">Insight</p>
-              <h3>이 제품이 해결하는 문제</h3>
+              <p className="panel-kicker">Firebase</p>
+              <h3>현재 연결 상태</h3>
             </div>
           </div>
 
           <ul className="insight-list">
-            <li>회원권 만료일과 잔여 횟수를 자동 추적</li>
-            <li>당일 예약과 취소를 캘린더 기준으로 정리</li>
-            <li>재등록 타이밍을 운영자가 놓치지 않게 표시</li>
-            <li>회원별 수업 메모를 다음 세션에 바로 연결</li>
+            <li>Firestore 컬렉션 `members`, `appointments`, `packages`, `sessionNotes` 구독</li>
+            <li>컬렉션이 비어 있으면 데모 데이터로 화면 유지</li>
+            <li>실데이터가 들어오면 대시보드 수치와 카드가 자동 갱신</li>
+            <li>다음 단계로 Auth와 쓰기 폼을 바로 붙일 수 있음</li>
           </ul>
         </article>
       </section>
@@ -216,7 +346,7 @@ function DashboardView() {
   )
 }
 
-function MembersView() {
+function MembersView({ members }) {
   return (
     <>
       <SectionHeader
@@ -241,7 +371,7 @@ function MembersView() {
             <span>상태</span>
           </div>
           {members.map((member) => (
-            <div className="table-row" key={member.phone}>
+            <div className="table-row" key={member.id ?? member.phone}>
               <span>{member.name}</span>
               <span>{member.phone}</span>
               <span>{member.pass}</span>
@@ -255,7 +385,7 @@ function MembersView() {
   )
 }
 
-function ScheduleView() {
+function ScheduleView({ calendarDays }) {
   return (
     <>
       <SectionHeader
@@ -270,7 +400,7 @@ function ScheduleView() {
       />
       <section className="calendar-grid">
         {calendarDays.map((day) => (
-          <article className="panel calendar-card" key={day.date}>
+          <article className="panel calendar-card" key={`${day.day}-${day.date}`}>
             <div className="calendar-head">
               <strong>{day.day}</strong>
               <span>{day.date}</span>
@@ -287,7 +417,7 @@ function ScheduleView() {
   )
 }
 
-function PassesView() {
+function PassesView({ packages }) {
   return (
     <>
       <SectionHeader
@@ -297,7 +427,7 @@ function PassesView() {
       />
       <section className="split-grid">
         {packages.map((item) => (
-          <article className="panel package-card" key={item.name}>
+          <article className="panel package-card" key={item.id ?? item.name}>
             <p className="panel-kicker">Package</p>
             <h3>{item.name}</h3>
             <strong className="price-text">{item.price}</strong>
@@ -310,7 +440,7 @@ function PassesView() {
   )
 }
 
-function NotesView() {
+function NotesView({ notes }) {
   return (
     <>
       <SectionHeader
@@ -320,7 +450,7 @@ function NotesView() {
       />
       <section className="split-grid">
         {notes.map((note) => (
-          <article className="panel note-card" key={`${note.member}-${note.updatedAt}`}>
+          <article className="panel note-card" key={note.id ?? `${note.member}-${note.updatedAt}`}>
             <div className="note-head">
               <strong>{note.member}</strong>
               <span>{note.updatedAt}</span>
@@ -334,16 +464,111 @@ function NotesView() {
   )
 }
 
-const views = {
-  dashboard: <DashboardView />,
-  members: <MembersView />,
-  schedule: <ScheduleView />,
-  passes: <PassesView />,
-  notes: <NotesView />,
-}
-
 export default function App() {
   const [activeView, setActiveView] = useState('dashboard')
+  const [members, setMembers] = useState(demoMembers)
+  const [sessions, setSessions] = useState(demoSessions)
+  const [packages, setPackages] = useState(demoPackages)
+  const [notes, setNotes] = useState(demoNotes)
+  const [syncStatus, setSyncStatus] = useState('Firebase 연결 중')
+
+  useEffect(() => {
+    const unsubscribers = []
+    let memberLoaded = false
+    let appointmentLoaded = false
+    let packageLoaded = false
+    let noteLoaded = false
+
+    const updateStatus = () => {
+      if (memberLoaded && appointmentLoaded && packageLoaded && noteLoaded) {
+        setSyncStatus('Firebase 동기화 완료')
+      }
+    }
+
+    unsubscribers.push(
+      onSnapshot(
+        query(collection(db, 'members')),
+        (snapshot) => {
+          const nextMembers = snapshot.docs.map(mapMember)
+          setMembers(nextMembers.length > 0 ? nextMembers : demoMembers)
+          memberLoaded = true
+          updateStatus()
+        },
+        () => {
+          setSyncStatus('Firebase 읽기 실패')
+        },
+      ),
+    )
+
+    unsubscribers.push(
+      onSnapshot(
+        query(collection(db, 'appointments')),
+        (snapshot) => {
+          const nextAppointments = snapshot.docs.map(mapAppointment)
+          setSessions(nextAppointments.length > 0 ? nextAppointments : demoSessions)
+          appointmentLoaded = true
+          updateStatus()
+        },
+        () => {
+          setSyncStatus('Firebase 읽기 실패')
+        },
+      ),
+    )
+
+    unsubscribers.push(
+      onSnapshot(
+        query(collection(db, 'packages')),
+        (snapshot) => {
+          const nextPackages = snapshot.docs.map(mapPackage)
+          setPackages(nextPackages.length > 0 ? nextPackages : demoPackages)
+          packageLoaded = true
+          updateStatus()
+        },
+        () => {
+          setSyncStatus('Firebase 읽기 실패')
+        },
+      ),
+    )
+
+    unsubscribers.push(
+      onSnapshot(
+        query(collection(db, 'sessionNotes')),
+        (snapshot) => {
+          const nextNotes = snapshot.docs.map(mapNote)
+          setNotes(nextNotes.length > 0 ? nextNotes : demoNotes)
+          noteLoaded = true
+          updateStatus()
+        },
+        () => {
+          setSyncStatus('Firebase 읽기 실패')
+        },
+      ),
+    )
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe())
+    }
+  }, [])
+
+  const alerts = buildAlerts(members)
+  const calendarDays = buildCalendar(sessions)
+  const stats = buildStats(members, sessions)
+
+  const views = {
+    dashboard: (
+      <DashboardView
+        alerts={alerts}
+        members={members}
+        sessions={sessions}
+        stats={stats}
+        syncStatus={syncStatus}
+      />
+    ),
+    members: <MembersView members={members} />,
+    schedule: <ScheduleView calendarDays={calendarDays} />,
+    passes: <PassesView packages={packages} />,
+    notes: <NotesView notes={notes} />,
+  }
 
   return (
     <main className="app-shell">
@@ -379,7 +604,7 @@ export default function App() {
           <div className="sidebar-card">
             <p className="sidebar-label">오늘 매출</p>
             <strong>₩1,240,000</strong>
-            <span>재등록 3건 · 신규 상담 2건</span>
+            <span>{syncStatus}</span>
           </div>
         </aside>
 

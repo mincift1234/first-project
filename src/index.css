@@ -189,6 +189,7 @@ button {
 .hero-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .primary-button,
@@ -217,6 +218,16 @@ button {
 .text-button {
   color: #f5a35c;
   background: transparent;
+}
+
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: #79e5cb;
+  background: rgba(76, 201, 172, 0.12);
+  font-size: 0.92rem;
 }
 
 .stats-grid {
