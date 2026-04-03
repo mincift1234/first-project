@@ -3,8 +3,556 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>first-project</title>
+  <title>실수령액·주휴수당 계산기</title>
+  <style>
+    :root {
+      --bg-1: #f6efe7;
+      --bg-2: #e5edf6;
+      --text: #17212b;
+      --muted: #607080;
+      --panel: rgba(255, 255, 255, 0.8);
+      --line: rgba(23, 33, 43, 0.1);
+      --accent: #d66a2b;
+      --accent-strong: #b8561d;
+      --accent-soft: rgba(214, 106, 43, 0.12);
+      --shadow: 0 18px 50px rgba(23, 33, 43, 0.12);
+      --input: rgba(255, 255, 255, 0.88);
+      --card: rgba(255, 255, 255, 0.7);
+      --positive: #1e8c5f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(214, 106, 43, 0.16), transparent 20%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      padding: 24px;
+    }
+
+    .page {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(14px);
+    }
+
+    .hero {
+      padding: 40px 32px 28px;
+      background:
+        linear-gradient(125deg, rgba(214, 106, 43, 0.14), rgba(84, 136, 212, 0.12)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(23, 33, 43, 0.06);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 16px 0 10px;
+      font-size: clamp(34px, 6vw, 60px);
+      line-height: 0.94;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 720px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 17px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 0;
+    }
+
+    .panel {
+      padding: 28px 32px 32px;
+    }
+
+    .panel + .panel {
+      border-left: 1px solid var(--line);
+    }
+
+    .section-tag {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+    }
+
+    .section-copy {
+      margin: 0 0 22px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    input,
+    select,
+    button {
+      font: inherit;
+      border-radius: 16px;
+      border: 1px solid transparent;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--input);
+      border-color: var(--line);
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(84, 136, 212, 0.6);
+      box-shadow: 0 0 0 4px rgba(84, 136, 212, 0.12);
+    }
+
+    button {
+      padding: 14px 18px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(214, 106, 43, 0.22);
+    }
+
+    .primary:hover {
+      background: var(--accent-strong);
+    }
+
+    .ghost {
+      background: rgba(255, 255, 255, 0.72);
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .summary {
+      display: grid;
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .summary-card {
+      padding: 18px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+    }
+
+    .summary-label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .summary-value {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 42px);
+      letter-spacing: -0.04em;
+    }
+
+    .summary-value.positive {
+      color: var(--positive);
+    }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .row strong {
+      font-size: 15px;
+    }
+
+    .hint {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(23, 33, 43, 0.05);
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .footer-note {
+      padding: 0 32px 30px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .panel + .panel {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .hero,
+      .panel,
+      .footer-note {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .button-row {
+        display: grid;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Salary Toolkit</span>
+      <h1>실수령액 · 주휴수당 계산기</h1>
+      <p>월급 기준 대략적인 실수령액과, 시급 근무자의 주휴수당을 한 화면에서 계산합니다. 빠르게 보기 좋은 형태로 구성했고, 급여 공제 항목도 같이 보여줍니다.</p>
+    </section>
+
+    <section class="layout">
+      <section class="panel">
+        <span class="section-tag">Take-home Pay</span>
+        <h2>월 실수령액 계산</h2>
+        <p class="section-copy">월급, 부양가족 수, 비과세 금액을 입력하면 4대보험과 간이 세액을 추정해서 월 예상 실수령액을 계산합니다.</p>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="monthlySalary">세전 월급</label>
+            <input id="monthlySalary" type="number" min="0" step="10000" value="3000000" placeholder="예: 3000000">
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="taxFreeAmount">비과세 금액</label>
+              <input id="taxFreeAmount" type="number" min="0" step="10000" value="200000" placeholder="예: 200000">
+            </div>
+            <div class="field">
+              <label for="dependents">부양가족 수</label>
+              <select id="dependents">
+                <option value="1">1명</option>
+                <option value="2">2명</option>
+                <option value="3">3명</option>
+                <option value="4">4명</option>
+                <option value="5">5명 이상</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button class="primary" id="salaryCalculateButton">실수령액 계산</button>
+            <button class="ghost" id="salaryResetButton" type="button">초기화</button>
+          </div>
+        </div>
+
+        <div class="summary">
+          <article class="summary-card">
+            <p class="summary-label">예상 월 실수령액</p>
+            <p class="summary-value positive" id="netSalaryValue">0원</p>
+          </article>
+
+          <article class="summary-card">
+            <p class="summary-label">공제 내역</p>
+            <div class="breakdown" id="salaryBreakdown"></div>
+          </article>
+        </div>
+
+        <div class="hint">
+          계산 방식은 국민연금, 건강보험, 장기요양보험, 고용보험의 일반적인 비율과 간이 추정 세율을 사용합니다. 실제 급여명세서와는 차이가 날 수 있습니다.
+        </div>
+      </section>
+
+      <section class="panel">
+        <span class="section-tag">Weekly Holiday Pay</span>
+        <h2>주휴수당 계산</h2>
+        <p class="section-copy">시급과 주당 근무시간을 입력하면 주휴수당과 주간 예상 총임금을 계산합니다. 주 15시간 미만이면 주휴수당은 0원으로 처리합니다.</p>
+
+        <div class="form-grid">
+          <div class="two-col">
+            <div class="field">
+              <label for="hourlyWage">시급</label>
+              <input id="hourlyWage" type="number" min="0" step="100" value="10030" placeholder="예: 10030">
+            </div>
+            <div class="field">
+              <label for="weeklyHours">주당 근무시간</label>
+              <input id="weeklyHours" type="number" min="0" step="0.5" value="20" placeholder="예: 20">
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="workDays">주당 근무일수</label>
+              <select id="workDays">
+                <option value="3">3일</option>
+                <option value="4">4일</option>
+                <option value="5" selected>5일</option>
+                <option value="6">6일</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="weeksPerMonth">월 환산 주수</label>
+              <select id="weeksPerMonth">
+                <option value="4">4주</option>
+                <option value="4.345" selected>4.345주</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button class="primary" id="holidayCalculateButton">주휴수당 계산</button>
+            <button class="ghost" id="holidayResetButton" type="button">초기화</button>
+          </div>
+        </div>
+
+        <div class="summary">
+          <article class="summary-card">
+            <p class="summary-label">주휴수당</p>
+            <p class="summary-value positive" id="holidayPayValue">0원</p>
+          </article>
+
+          <article class="summary-card">
+            <p class="summary-label">주간 예상 급여</p>
+            <div class="breakdown" id="holidayBreakdown"></div>
+          </article>
+        </div>
+
+        <div class="hint">
+          주휴수당은 일반적으로 `1주 소정근로시간 ÷ 주 소정근로일수 × 시급` 기준으로 계산합니다. 실제 지급 요건은 출근율과 사업장 운영 방식에 따라 달라질 수 있습니다.
+        </div>
+      </section>
+    </section>
+
+    <div class="footer-note">
+      본 계산기는 빠른 참고용입니다. 정확한 세액이나 법적 지급 여부가 중요한 경우에는 급여 담당자, 세무 전문가 또는 공식 기준표를 함께 확인하는 편이 안전합니다.
+    </div>
+  </main>
+
+  <script>
+    const monthlySalaryInput = document.getElementById("monthlySalary");
+    const taxFreeAmountInput = document.getElementById("taxFreeAmount");
+    const dependentsInput = document.getElementById("dependents");
+    const netSalaryValue = document.getElementById("netSalaryValue");
+    const salaryBreakdown = document.getElementById("salaryBreakdown");
+    const salaryCalculateButton = document.getElementById("salaryCalculateButton");
+    const salaryResetButton = document.getElementById("salaryResetButton");
+
+    const hourlyWageInput = document.getElementById("hourlyWage");
+    const weeklyHoursInput = document.getElementById("weeklyHours");
+    const workDaysInput = document.getElementById("workDays");
+    const weeksPerMonthInput = document.getElementById("weeksPerMonth");
+    const holidayPayValue = document.getElementById("holidayPayValue");
+    const holidayBreakdown = document.getElementById("holidayBreakdown");
+    const holidayCalculateButton = document.getElementById("holidayCalculateButton");
+    const holidayResetButton = document.getElementById("holidayResetButton");
+
+    function formatCurrency(value) {
+      return `${Math.round(value).toLocaleString("ko-KR")}원`;
+    }
+
+    function clampNumber(value) {
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function renderRows(target, rows) {
+      target.innerHTML = "";
+
+      rows.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `<strong>${item.label}</strong><span>${item.value}</span>`;
+        target.appendChild(row);
+      });
+    }
+
+    function calculateSalary() {
+      const monthlySalary = clampNumber(Number(monthlySalaryInput.value));
+      const taxFreeAmount = Math.min(clampNumber(Number(taxFreeAmountInput.value)), monthlySalary);
+      const dependents = Number(dependentsInput.value);
+      const taxableIncome = Math.max(monthlySalary - taxFreeAmount, 0);
+
+      const pension = taxableIncome * 0.045;
+      const healthInsurance = taxableIncome * 0.03545;
+      const longTermCare = healthInsurance * 0.1295;
+      const employmentInsurance = taxableIncome * 0.009;
+
+      let incomeTaxRate = 0.03;
+      if (taxableIncome >= 5000000) incomeTaxRate = 0.055;
+      else if (taxableIncome >= 4000000) incomeTaxRate = 0.045;
+      else if (taxableIncome >= 3000000) incomeTaxRate = 0.04;
+
+      const dependentRelief = Math.max(0, dependents - 1) * 12000;
+      const incomeTax = Math.max(taxableIncome * incomeTaxRate - dependentRelief, 0);
+      const localIncomeTax = incomeTax * 0.1;
+
+      const totalDeduction = pension + healthInsurance + longTermCare + employmentInsurance + incomeTax + localIncomeTax;
+      const netSalary = Math.max(monthlySalary - totalDeduction, 0);
+
+      netSalaryValue.textContent = formatCurrency(netSalary);
+
+      renderRows(salaryBreakdown, [
+        { label: "국민연금", value: formatCurrency(pension) },
+        { label: "건강보험", value: formatCurrency(healthInsurance) },
+        { label: "장기요양보험", value: formatCurrency(longTermCare) },
+        { label: "고용보험", value: formatCurrency(employmentInsurance) },
+        { label: "소득세", value: formatCurrency(incomeTax) },
+        { label: "지방소득세", value: formatCurrency(localIncomeTax) },
+        { label: "총 공제액", value: formatCurrency(totalDeduction) }
+      ]);
+    }
+
+    function calculateHolidayPay() {
+      const hourlyWage = clampNumber(Number(hourlyWageInput.value));
+      const weeklyHours = clampNumber(Number(weeklyHoursInput.value));
+      const workDays = clampNumber(Number(workDaysInput.value));
+      const weeksPerMonth = clampNumber(Number(weeksPerMonthInput.value));
+
+      const regularWeeklyPay = hourlyWage * weeklyHours;
+      const dailyAverageHours = workDays > 0 ? weeklyHours / workDays : 0;
+      const weeklyHolidayPay = weeklyHours >= 15 ? dailyAverageHours * hourlyWage : 0;
+      const weeklyTotalPay = regularWeeklyPay + weeklyHolidayPay;
+      const monthlyHolidayPay = weeklyHolidayPay * weeksPerMonth;
+      const monthlyEstimatedPay = weeklyTotalPay * weeksPerMonth;
+
+      holidayPayValue.textContent = formatCurrency(weeklyHolidayPay);
+
+      renderRows(holidayBreakdown, [
+        { label: "주간 기본급", value: formatCurrency(regularWeeklyPay) },
+        { label: "주휴 포함 주간 총액", value: formatCurrency(weeklyTotalPay) },
+        { label: "월 환산 주휴수당", value: formatCurrency(monthlyHolidayPay) },
+        { label: "월 환산 총임금", value: formatCurrency(monthlyEstimatedPay) }
+      ]);
+    }
+
+    function resetSalary() {
+      monthlySalaryInput.value = "3000000";
+      taxFreeAmountInput.value = "200000";
+      dependentsInput.value = "1";
+      calculateSalary();
+    }
+
+    function resetHolidayPay() {
+      hourlyWageInput.value = "10030";
+      weeklyHoursInput.value = "20";
+      workDaysInput.value = "5";
+      weeksPerMonthInput.value = "4.345";
+      calculateHolidayPay();
+    }
+
+    salaryCalculateButton.addEventListener("click", calculateSalary);
+    salaryResetButton.addEventListener("click", resetSalary);
+    holidayCalculateButton.addEventListener("click", calculateHolidayPay);
+    holidayResetButton.addEventListener("click", resetHolidayPay);
+
+    calculateSalary();
+    calculateHolidayPay();
+  </script>
 </body>
 </html>
