@@ -9,56 +9,107 @@
 <body>
   <main class="page">
     <section class="hero">
-      <span class="eyebrow">Salary Toolkit</span>
-      <h1>실수령액 · 주휴수당 계산기</h1>
-      <p>월급 기준 대략적인 실수령액과, 시급 근무자의 주휴수당을 한 화면에서 계산합니다. 빠르게 보기 좋은 형태로 구성했고, 급여 공제 항목도 같이 보여줍니다.</p>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Salary Toolkit</span>
+          <h1>실수령액과 주휴수당을<br>한 번에 계산하는 급여 도구</h1>
+          <p>복잡한 급여 계산을 빠르게 정리할 수 있도록, 월 실수령액 추정과 주휴수당 계산을 하나의 화면에 담았습니다. 입력과 결과를 분리해서 실제 서비스 화면처럼 읽히도록 구성했습니다.</p>
+        </div>
+
+        <aside class="hero-aside">
+          <div class="mini-card">
+            <span class="mini-label">빠른 체크</span>
+            <strong>월급 공제 항목</strong>
+            <p>국민연금, 건강보험, 장기요양보험, 고용보험, 소득세를 즉시 요약합니다.</p>
+          </div>
+          <div class="mini-card">
+            <span class="mini-label">아르바이트 기준</span>
+            <strong>주휴수당 계산</strong>
+            <p>주 15시간 이상 근무 기준으로 주간·월간 환산 금액까지 보여줍니다.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="overview-strip">
+      <article class="overview-card">
+        <span class="overview-label">실무형 구성</span>
+        <strong>입력과 결과를 나란히 확인</strong>
+      </article>
+      <article class="overview-card">
+        <span class="overview-label">빠른 참고용</span>
+        <strong>공제 항목별 금액까지 표시</strong>
+      </article>
+      <article class="overview-card">
+        <span class="overview-label">모바일 대응</span>
+        <strong>작은 화면에서도 바로 계산</strong>
+      </article>
     </section>
 
     <section class="layout">
-      <section class="panel">
-        <span class="section-tag">Take-home Pay</span>
-        <h2>월 실수령액 계산</h2>
-        <p class="section-copy">월급, 부양가족 수, 비과세 금액을 입력하면 4대보험과 간이 세액을 추정해서 월 예상 실수령액을 계산합니다.</p>
-
-        <div class="form-grid">
-          <div class="field">
-            <label for="monthlySalary">세전 월급</label>
-            <input id="monthlySalary" type="number" min="0" step="10000" value="3000000" placeholder="예: 3000000">
+      <section class="tool-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="section-tag">Take-home Pay</span>
+            <h2>월 실수령액 계산</h2>
+            <p class="section-copy">월급, 부양가족 수, 비과세 금액을 바탕으로 월 예상 실수령액과 공제 내역을 추정합니다.</p>
           </div>
-
-          <div class="two-col">
-            <div class="field">
-              <label for="taxFreeAmount">비과세 금액</label>
-              <input id="taxFreeAmount" type="number" min="0" step="10000" value="200000" placeholder="예: 200000">
-            </div>
-            <div class="field">
-              <label for="dependents">부양가족 수</label>
-              <select id="dependents">
-                <option value="1">1명</option>
-                <option value="2">2명</option>
-                <option value="3">3명</option>
-                <option value="4">4명</option>
-                <option value="5">5명 이상</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="button-row">
-            <button class="primary" id="salaryCalculateButton">실수령액 계산</button>
-            <button class="ghost" id="salaryResetButton" type="button">초기화</button>
-          </div>
+          <div class="panel-badge">Monthly</div>
         </div>
 
-        <div class="summary">
-          <article class="summary-card">
-            <p class="summary-label">예상 월 실수령액</p>
-            <p class="summary-value positive" id="netSalaryValue">0원</p>
-          </article>
+        <div class="panel-body">
+          <div class="input-card">
+            <div class="card-header">
+              <h3>입력</h3>
+              <p>월 급여 조건을 입력하세요.</p>
+            </div>
 
-          <article class="summary-card">
-            <p class="summary-label">공제 내역</p>
-            <div class="breakdown" id="salaryBreakdown"></div>
-          </article>
+            <div class="field">
+              <label for="monthlySalary">세전 월급</label>
+              <input id="monthlySalary" type="number" min="0" step="10000" value="3000000" placeholder="예: 3000000">
+            </div>
+
+            <div class="two-col">
+              <div class="field">
+                <label for="taxFreeAmount">비과세 금액</label>
+                <input id="taxFreeAmount" type="number" min="0" step="10000" value="200000" placeholder="예: 200000">
+              </div>
+              <div class="field">
+                <label for="dependents">부양가족 수</label>
+                <select id="dependents">
+                  <option value="1">1명</option>
+                  <option value="2">2명</option>
+                  <option value="3">3명</option>
+                  <option value="4">4명</option>
+                  <option value="5">5명 이상</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button class="primary" id="salaryCalculateButton">실수령액 계산</button>
+              <button class="ghost" id="salaryResetButton" type="button">초기화</button>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="card-header">
+              <h3>결과</h3>
+              <p>공제 후 수령액과 세부 내역입니다.</p>
+            </div>
+
+            <div class="summary">
+              <article class="summary-card featured">
+                <p class="summary-label">예상 월 실수령액</p>
+                <p class="summary-value positive" id="netSalaryValue">0원</p>
+              </article>
+
+              <article class="summary-card">
+                <p class="summary-label">공제 내역</p>
+                <div class="breakdown" id="salaryBreakdown"></div>
+              </article>
+            </div>
+          </div>
         </div>
 
         <div class="hint">
@@ -66,58 +117,77 @@
         </div>
       </section>
 
-      <section class="panel">
-        <span class="section-tag">Weekly Holiday Pay</span>
-        <h2>주휴수당 계산</h2>
-        <p class="section-copy">시급과 주당 근무시간을 입력하면 주휴수당과 주간 예상 총임금을 계산합니다. 주 15시간 미만이면 주휴수당은 0원으로 처리합니다.</p>
-
-        <div class="form-grid">
-          <div class="two-col">
-            <div class="field">
-              <label for="hourlyWage">시급</label>
-              <input id="hourlyWage" type="number" min="0" step="100" value="10030" placeholder="예: 10030">
-            </div>
-            <div class="field">
-              <label for="weeklyHours">주당 근무시간</label>
-              <input id="weeklyHours" type="number" min="0" step="0.5" value="20" placeholder="예: 20">
-            </div>
+      <section class="tool-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="section-tag">Weekly Holiday Pay</span>
+            <h2>주휴수당 계산</h2>
+            <p class="section-copy">시급과 주당 근무시간을 기준으로 주휴수당과 주간·월간 환산 금액을 계산합니다.</p>
           </div>
-
-          <div class="two-col">
-            <div class="field">
-              <label for="workDays">주당 근무일수</label>
-              <select id="workDays">
-                <option value="3">3일</option>
-                <option value="4">4일</option>
-                <option value="5" selected>5일</option>
-                <option value="6">6일</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="weeksPerMonth">월 환산 주수</label>
-              <select id="weeksPerMonth">
-                <option value="4">4주</option>
-                <option value="4.345" selected>4.345주</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="button-row">
-            <button class="primary" id="holidayCalculateButton">주휴수당 계산</button>
-            <button class="ghost" id="holidayResetButton" type="button">초기화</button>
-          </div>
+          <div class="panel-badge">Part-time</div>
         </div>
 
-        <div class="summary">
-          <article class="summary-card">
-            <p class="summary-label">주휴수당</p>
-            <p class="summary-value positive" id="holidayPayValue">0원</p>
-          </article>
+        <div class="panel-body">
+          <div class="input-card">
+            <div class="card-header">
+              <h3>입력</h3>
+              <p>근무 조건을 기준으로 계산합니다.</p>
+            </div>
 
-          <article class="summary-card">
-            <p class="summary-label">주간 예상 급여</p>
-            <div class="breakdown" id="holidayBreakdown"></div>
-          </article>
+            <div class="two-col">
+              <div class="field">
+                <label for="hourlyWage">시급</label>
+                <input id="hourlyWage" type="number" min="0" step="100" value="10030" placeholder="예: 10030">
+              </div>
+              <div class="field">
+                <label for="weeklyHours">주당 근무시간</label>
+                <input id="weeklyHours" type="number" min="0" step="0.5" value="20" placeholder="예: 20">
+              </div>
+            </div>
+
+            <div class="two-col">
+              <div class="field">
+                <label for="workDays">주당 근무일수</label>
+                <select id="workDays">
+                  <option value="3">3일</option>
+                  <option value="4">4일</option>
+                  <option value="5" selected>5일</option>
+                  <option value="6">6일</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="weeksPerMonth">월 환산 주수</label>
+                <select id="weeksPerMonth">
+                  <option value="4">4주</option>
+                  <option value="4.345" selected>4.345주</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button class="primary" id="holidayCalculateButton">주휴수당 계산</button>
+              <button class="ghost" id="holidayResetButton" type="button">초기화</button>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="card-header">
+              <h3>결과</h3>
+              <p>주휴수당과 환산 임금을 확인하세요.</p>
+            </div>
+
+            <div class="summary">
+              <article class="summary-card featured">
+                <p class="summary-label">주휴수당</p>
+                <p class="summary-value positive" id="holidayPayValue">0원</p>
+              </article>
+
+              <article class="summary-card">
+                <p class="summary-label">주간 예상 급여</p>
+                <div class="breakdown" id="holidayBreakdown"></div>
+              </article>
+            </div>
+          </div>
         </div>
 
         <div class="hint">
