@@ -1,889 +1,239 @@
-import { useEffect, useState } from 'react'
-import {
-  addDoc,
-  collection,
-  doc,
-  onSnapshot,
-  query,
-  serverTimestamp,
-  writeBatch,
-} from 'firebase/firestore'
-import { db } from './firebase'
-import { AppointmentForm, MemberForm, NoteForm, PackageForm } from './forms'
-import {
-  demoAlerts,
-  demoCalendarDays,
-  demoMembers,
-  demoNotes,
-  demoPackages,
-  demoSessions,
-} from './demoData'
-
-const menuItems = [
-  { id: 'dashboard', label: '대시보드' },
-  { id: 'members', label: '회원 관리' },
-  { id: 'schedule', label: '예약 캘린더' },
-  { id: 'passes', label: '이용권' },
-  { id: 'notes', label: '상담 메모' },
+const serviceHighlights = [
+  {
+    title: '사업이 바로 이해되는 첫 화면',
+    description:
+      '사이트에 들어오자마자 누가 봐도 업종, 강점, 문의 방법이 보이게 구성합니다.',
+  },
+  {
+    title: '모바일에서 보기 편한 구조',
+    description:
+      '실제 방문자는 모바일이 많기 때문에 작은 화면에서도 버튼과 정보가 먼저 보이게 만듭니다.',
+  },
+  {
+    title: '수정하기 쉬운 섹션 설계',
+    description:
+      '나중에 문구, 후기, 가격, 사진을 바꾸기 쉽도록 반복 가능한 섹션으로 나눠둡니다.',
+  },
 ]
 
-const weekdayLabels = ['일', '월', '화', '수', '목', '금', '토']
+const processSteps = [
+  {
+    step: '01',
+    title: '업종과 목표 정리',
+    description: '누구에게 보여줄 사이트인지, 문의를 받을지 예약을 받을지 먼저 정합니다.',
+  },
+  {
+    step: '02',
+    title: '문구와 화면 흐름 설계',
+    description: '첫 화면, 서비스 소개, 후기, 가격, 문의 섹션 순서를 잡고 카피를 맞춥니다.',
+  },
+  {
+    step: '03',
+    title: 'React로 제작',
+    description: '반응형 레이아웃과 재사용 가능한 컴포넌트로 빠르게 제작합니다.',
+  },
+  {
+    step: '04',
+    title: '배포와 수정',
+    description: '실제 오픈 후에도 문구와 섹션을 수정할 수 있게 구조를 정리해 전달합니다.',
+  },
+]
 
-const initialMemberForm = {
-  name: '',
-  phone: '',
-  pass: '',
-  remainingSessions: '',
-  expiryDate: '',
-  status: '정상',
-}
+const portfolioProjects = [
+  {
+    category: 'PT 스튜디오',
+    title: '예약 문의가 바로 보이는 소개형 사이트',
+    summary:
+      '가격표, 위치, 후기, 상담 신청 버튼을 메인 흐름에 넣어 첫 방문자가 바로 행동하게 만드는 구성입니다.',
+    outcome: '목표: 소개 + 상담 유도',
+  },
+  {
+    category: '카페 / 소형 매장',
+    title: '분위기와 메뉴가 먼저 전달되는 브랜드 페이지',
+    summary:
+      '사진 중심 레이아웃으로 가게의 톤을 보여주고, 지도와 인스타그램 연결을 함께 배치합니다.',
+    outcome: '목표: 방문 유도 + 브랜드 인상',
+  },
+  {
+    category: '1인 전문가',
+    title: '서비스 설명이 깔끔한 상담형 랜딩 페이지',
+    summary:
+      '누가, 무엇을, 어떻게 도와주는지 한 페이지 안에서 정리해 신뢰를 높이는 구조입니다.',
+    outcome: '목표: 신뢰 형성 + 문의 전환',
+  },
+]
 
-const initialAppointmentForm = {
-  member: '',
-  trainer: '',
-  goal: '',
-  startAt: '',
-  status: '예정',
-}
+const pricingPlans = [
+  {
+    name: '기본형',
+    price: '40만원부터',
+    target: '처음 온라인 소개 페이지가 필요한 사장님',
+    features: ['메인 소개 페이지', '서비스/소개 섹션', '모바일 최적화', '기본 문의 버튼 연결'],
+  },
+  {
+    name: '문의형',
+    price: '70만원부터',
+    target: '상담 문의를 더 잘 받고 싶은 업종',
+    features: ['기본형 포함', '후기/사례 섹션', '가격 또는 프로그램 소개', '문의 폼 또는 채널 연결'],
+  },
+  {
+    name: '운영형',
+    price: '120만원부터',
+    target: '업데이트와 관리까지 함께 맡기고 싶은 경우',
+    features: ['문의형 포함', '추가 페이지 제작', '관리용 콘텐츠 구조화', '오픈 후 수정 지원'],
+  },
+]
 
-const initialPackageForm = {
-  name: '',
-  price: '',
-  validDays: '',
-  monthlySales: '',
-}
-
-const initialNoteForm = {
-  member: '',
-  title: '',
-  body: '',
-}
-
-function toDate(value) {
-  if (!value) return null
-  if (value instanceof Date) return value
-  if (typeof value?.toDate === 'function') return value.toDate()
-
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-
-function formatShortDate(value) {
-  const date = toDate(value)
-  if (!date) return '-'
-
-  return `${date.getMonth() + 1}월 ${date.getDate()}일`
-}
-
-function formatCalendarDate(value) {
-  const date = toDate(value)
-  if (!date) return '미정'
-
-  return `${date.getMonth() + 1}/${date.getDate()}`
-}
-
-function formatTime(value) {
-  const date = toDate(value)
-  if (!date) return typeof value === 'string' ? value : '--:--'
-
-  return date.toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-}
-
-function formatCurrency(value) {
-  if (typeof value === 'string') return value
-  if (typeof value !== 'number') return '₩0'
-
-  return new Intl.NumberFormat('ko-KR', {
-    style: 'currency',
-    currency: 'KRW',
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-function formatRelativeUpdate(value) {
-  const date = toDate(value)
-  if (!date) return '업데이트 없음'
-
-  return date.toLocaleString('ko-KR', {
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function mapMember(doc) {
-  const data = doc.data()
-
-  return {
-    id: doc.id,
-    name: data.name ?? '이름 없음',
-    phone: data.phone ?? '-',
-    pass: data.pass ?? data.passName ?? '이용권 미설정',
-    left:
-      data.left ??
-      (typeof data.remainingSessions === 'number' ? `${data.remainingSessions}회 남음` : '-'),
-    expiry: data.expiry ?? formatShortDate(data.expiryDate),
-    status: data.status ?? '정상',
-  }
-}
-
-function mapAppointment(doc) {
-  const data = doc.data()
-
-  return {
-    id: doc.id,
-    startAt: data.startAt ?? data.dateTime ?? null,
-    time: data.time ?? formatTime(data.startAt ?? data.dateTime),
-    member: data.member ?? data.memberName ?? '미정',
-    goal: data.goal ?? data.program ?? '목표 미설정',
-    trainer: data.trainer ?? data.trainerName ?? '-',
-    status: data.status ?? '예정',
-  }
-}
-
-function mapPackage(doc) {
-  const data = doc.data()
-
-  return {
-    id: doc.id,
-    name: data.name ?? '이용권',
-    price: formatCurrency(data.price),
-    rule: data.rule ?? (data.validDays ? `${data.validDays}일` : '-'),
-    sales:
-      data.sales ??
-      (typeof data.monthlySales === 'number' ? `이번 달 ${data.monthlySales}건` : '판매 데이터 없음'),
-  }
-}
-
-function mapNote(doc) {
-  const data = doc.data()
-
-  return {
-    id: doc.id,
-    member: data.member ?? data.memberName ?? '회원 미지정',
-    title: data.title ?? '메모 제목 없음',
-    body: data.body ?? data.memo ?? '',
-    updatedAt: formatRelativeUpdate(data.updatedAt ?? data.createdAt),
-  }
-}
-
-function buildAlerts(memberData) {
-  const renewalMembers = memberData.filter((member) => member.status.includes('재등록'))
-  const lowMembers = memberData.filter((member) => member.left.includes('2회') || member.left.includes('3회'))
-
-  const result = [
-    ...renewalMembers.slice(0, 2).map((member) => ({
-      member: member.name,
-      detail: `${member.left} · ${member.expiry}`,
-      tone: 'renewal',
-    })),
-    ...lowMembers.slice(0, 1).map((member) => ({
-      member: member.name,
-      detail: `${member.left} · ${member.expiry}`,
-      tone: 'urgent',
-    })),
-  ]
-
-  return result.length > 0 ? result : demoAlerts
-}
-
-function buildCalendar(appointments) {
-  const grouped = appointments
-    .filter((appointment) => toDate(appointment.startAt))
-    .sort((a, b) => toDate(a.startAt) - toDate(b.startAt))
-    .slice(0, 10)
-    .reduce((acc, appointment) => {
-      const date = toDate(appointment.startAt)
-      const key = date.toDateString()
-
-      if (!acc[key]) {
-        acc[key] = {
-          day: weekdayLabels[date.getDay()],
-          date: formatCalendarDate(date),
-          slots: [],
-        }
-      }
-
-      acc[key].slots.push(`${formatTime(date)} ${appointment.member}`)
-
-      return acc
-    }, {})
-
-  const items = Object.values(grouped)
-  return items.length > 0 ? items : demoCalendarDays
-}
-
-function buildStats(memberData, appointmentData) {
-  const sessionsToday = appointmentData.length
-  const completed = appointmentData.filter((item) => item.status === '완료').length
-  const scheduled = appointmentData.filter((item) => item.status === '예정').length
-  const waiting = appointmentData.filter((item) => item.status === '대기').length
-  const renewalRisk = memberData.filter((item) => item.status.includes('재등록')).length
-  const tracking = memberData.filter((item) => item.status.includes('추적')).length
-  const noShows = appointmentData.filter((item) => item.status === '노쇼').length
-
-  return [
-    {
-      label: '오늘 수업',
-      value: `${sessionsToday || demoSessions.length}건`,
-      meta: `완료 ${completed}건 · 예정 ${scheduled}건 · 대기 ${waiting}건`,
-    },
-    {
-      label: '재등록 위험',
-      value: `${renewalRisk || 0}명`,
-      meta: '잔여 횟수와 만료일이 임박한 회원',
-    },
-    {
-      label: '추적 회원',
-      value: `${tracking || 0}명`,
-      meta: '최근 예약 공백이 있는 회원',
-    },
-    {
-      label: '이번 주 노쇼',
-      value: `${noShows || 0}건`,
-      meta: '실제 운영 데이터 기준',
-    },
-  ]
-}
-
-function StatCard({ label, value, meta }) {
+function SectionTitle({ eyebrow, title, description }) {
   return (
-    <article className="stat-card">
-      <p className="stat-label">{label}</p>
-      <strong className="stat-value">{value}</strong>
-      <p className="stat-meta">{meta}</p>
-    </article>
-  )
-}
-
-function SectionHeader({ eyebrow, title, action, status }) {
-  return (
-    <header className="hero-panel">
-      <div>
-        <p className="eyebrow">{eyebrow}</p>
-        <h2>{title}</h2>
-      </div>
-      <div className="hero-actions">
-        {status ? <span className="sync-badge">{status}</span> : null}
-        {action}
-      </div>
+    <header className="section-title">
+      <p>{eyebrow}</p>
+      <h2>{title}</h2>
+      <span>{description}</span>
     </header>
   )
 }
 
-function DashboardView({ alerts, members, sessions, stats, syncStatus, onQuickAction }) {
-  return (
-    <>
-      <SectionHeader
-        eyebrow="Trainer Console"
-        title="오늘 운영 현황"
-        status={syncStatus}
-        action={
-          <>
-            <button className="secondary-button" onClick={() => onQuickAction('members')} type="button">
-              회원 추가
-            </button>
-            <button className="primary-button" onClick={() => onQuickAction('schedule')} type="button">
-              수업 기록 입력
-            </button>
-          </>
-        }
-      />
-
-      <section className="stats-grid">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </section>
-
-      <section className="panel-grid">
-        <article className="panel schedule-panel">
-          <div className="panel-head">
-            <div>
-              <p className="panel-kicker">Today</p>
-              <h3>수업 스케줄</h3>
-            </div>
-            <button className="text-button" onClick={() => onQuickAction('schedule')} type="button">
-              전체 보기
-            </button>
-          </div>
-
-          <div className="session-list">
-            {sessions.slice(0, 4).map((session) => (
-              <div className="session-row" key={session.id ?? `${session.time}-${session.member}`}>
-                <div className="session-time">{session.time}</div>
-                <div className="session-main">
-                  <strong>{session.member}</strong>
-                  <span>{session.goal}</span>
-                </div>
-                <span className={`status-badge ${session.status}`}>{session.status}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="panel alert-panel">
-          <div className="panel-head">
-            <div>
-              <p className="panel-kicker">Retention</p>
-              <h3>즉시 확인할 회원</h3>
-            </div>
-            <button className="text-button">알림 설정</button>
-          </div>
-
-          <div className="alert-list">
-            {alerts.map((alert) => (
-              <div className={`alert-card ${alert.tone}`} key={`${alert.member}-${alert.detail}`}>
-                <strong>{alert.member}</strong>
-                <span>{alert.detail}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="panel member-panel">
-          <div className="panel-head">
-            <div>
-              <p className="panel-kicker">Members</p>
-              <h3>회원권 현황</h3>
-            </div>
-            <button className="text-button" onClick={() => onQuickAction('members')} type="button">
-              회원 전체 보기
-            </button>
-          </div>
-
-          <div className="member-list">
-            {members.slice(0, 3).map((member) => (
-              <div className="member-row" key={member.id ?? member.name}>
-                <div>
-                  <strong>{member.name}</strong>
-                  <p>{member.pass}</p>
-                </div>
-                <div className="member-meta">
-                  <span>{member.left}</span>
-                  <span>{member.expiry}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="panel insight-panel">
-          <div className="panel-head">
-            <div>
-              <p className="panel-kicker">Firebase</p>
-              <h3>현재 연결 상태</h3>
-            </div>
-          </div>
-
-          <ul className="insight-list">
-            <li>Firestore 컬렉션 `members`, `appointments`, `packages`, `sessionNotes` 구독</li>
-            <li>컬렉션이 비어 있으면 데모 데이터로 화면 유지</li>
-            <li>실데이터가 들어오면 대시보드 수치와 카드가 자동 갱신</li>
-            <li>회원, 예약, 메모, 이용권을 섹션별 폼에서 바로 생성 가능</li>
-          </ul>
-        </article>
-      </section>
-    </>
-  )
-}
-
-function MembersView({ members, form, onChange, onSubmit, feedback }) {
-  return (
-    <>
-      <SectionHeader
-        eyebrow="Members"
-        title="회원 관리"
-        action={<button className="primary-button" onClick={onSubmit} type="button">신규 회원 등록</button>}
-      />
-      <section className="split-layout">
-        <MemberForm form={form} onChange={onChange} onSubmit={onSubmit} feedback={feedback} />
-        <section className="panel stacked-panel">
-        <div className="toolbar">
-          <div className="search-chip">실시간 회원 목록</div>
-          <div className="toolbar-actions">
-            <button className="secondary-button">재등록 필요만 보기</button>
-            <button className="secondary-button">엑셀 다운로드</button>
-          </div>
-        </div>
-        <div className="data-table">
-          <div className="table-row table-head-row">
-            <span>회원명</span>
-            <span>연락처</span>
-            <span>이용권</span>
-            <span>잔여/만료</span>
-            <span>상태</span>
-          </div>
-          {members.map((member) => (
-            <div className="table-row" key={member.id ?? member.phone}>
-              <span>{member.name}</span>
-              <span>{member.phone}</span>
-              <span>{member.pass}</span>
-              <span>{member.left} · {member.expiry}</span>
-              <span className={`mini-badge ${member.status}`}>{member.status}</span>
-            </div>
-          ))}
-        </div>
-        </section>
-      </section>
-    </>
-  )
-}
-
-function ScheduleView({ calendarDays, form, onChange, onSubmit, feedback }) {
-  return (
-    <>
-      <SectionHeader
-        eyebrow="Schedule"
-        title="예약 캘린더"
-        action={
-          <>
-            <button className="secondary-button">트레이너 필터</button>
-            <button className="primary-button" onClick={onSubmit} type="button">예약 추가</button>
-          </>
-        }
-      />
-      <section className="split-layout">
-        <AppointmentForm form={form} onChange={onChange} onSubmit={onSubmit} feedback={feedback} />
-        <section className="calendar-grid">
-        {calendarDays.map((day) => (
-          <article className="panel calendar-card" key={`${day.day}-${day.date}`}>
-            <div className="calendar-head">
-              <strong>{day.day}</strong>
-              <span>{day.date}</span>
-            </div>
-            <div className="calendar-slots">
-              {day.slots.map((slot) => (
-                <div className="slot-pill" key={slot}>{slot}</div>
-              ))}
-            </div>
-          </article>
-        ))}
-        </section>
-      </section>
-    </>
-  )
-}
-
-function PassesView({ packages, form, onChange, onSubmit, feedback }) {
-  return (
-    <>
-      <SectionHeader
-        eyebrow="Packages"
-        title="이용권 관리"
-        action={<button className="primary-button" onClick={onSubmit} type="button">이용권 상품 추가</button>}
-      />
-      <section className="split-layout">
-        <PackageForm form={form} onChange={onChange} onSubmit={onSubmit} feedback={feedback} />
-        <section className="split-grid">
-        {packages.map((item) => (
-          <article className="panel package-card" key={item.id ?? item.name}>
-            <p className="panel-kicker">Package</p>
-            <h3>{item.name}</h3>
-            <strong className="price-text">{item.price}</strong>
-            <p className="package-meta">유효기간 {item.rule}</p>
-            <p className="package-meta">{item.sales}</p>
-          </article>
-        ))}
-        </section>
-      </section>
-    </>
-  )
-}
-
-function NotesView({ notes, form, onChange, onSubmit, feedback }) {
-  return (
-    <>
-      <SectionHeader
-        eyebrow="Session Notes"
-        title="상담 메모"
-        action={<button className="primary-button" onClick={onSubmit} type="button">메모 작성</button>}
-      />
-      <section className="split-layout">
-        <NoteForm form={form} onChange={onChange} onSubmit={onSubmit} feedback={feedback} />
-        <section className="split-grid">
-        {notes.map((note) => (
-          <article className="panel note-card" key={note.id ?? `${note.member}-${note.updatedAt}`}>
-            <div className="note-head">
-              <strong>{note.member}</strong>
-              <span>{note.updatedAt}</span>
-            </div>
-            <h3>{note.title}</h3>
-            <p className="note-body">{note.body}</p>
-          </article>
-        ))}
-        </section>
-      </section>
-    </>
-  )
-}
-
 export default function App() {
-  const [activeView, setActiveView] = useState('dashboard')
-  const [members, setMembers] = useState(demoMembers)
-  const [sessions, setSessions] = useState(demoSessions)
-  const [packages, setPackages] = useState(demoPackages)
-  const [notes, setNotes] = useState(demoNotes)
-  const [syncStatus, setSyncStatus] = useState('Firebase 연결 중')
-  const [errorMessage, setErrorMessage] = useState('')
-  const [seedStatus, setSeedStatus] = useState('')
-  const [memberForm, setMemberForm] = useState(initialMemberForm)
-  const [appointmentForm, setAppointmentForm] = useState(initialAppointmentForm)
-  const [packageForm, setPackageForm] = useState(initialPackageForm)
-  const [noteForm, setNoteForm] = useState(initialNoteForm)
-  const [memberFeedback, setMemberFeedback] = useState('')
-  const [appointmentFeedback, setAppointmentFeedback] = useState('')
-  const [packageFeedback, setPackageFeedback] = useState('')
-  const [noteFeedback, setNoteFeedback] = useState('')
-
-  function handleFieldChange(setter) {
-    return (event) => {
-      const { name, value } = event.target
-      setter((prev) => ({ ...prev, [name]: value }))
-    }
-  }
-
-  async function seedFirestore() {
-    setSeedStatus('샘플 데이터 쓰는 중')
-    setErrorMessage('')
-
-    try {
-      const batch = writeBatch(db)
-
-      demoMembers.forEach((member, index) => {
-        batch.set(doc(db, 'members', `member-${index + 1}`), {
-          name: member.name,
-          phone: member.phone,
-          pass: member.pass,
-          left: member.left,
-          expiry: member.expiry,
-          status: member.status,
-          createdAt: serverTimestamp(),
-        })
-      })
-
-      demoSessions.forEach((session, index) => {
-        batch.set(doc(db, 'appointments', `appointment-${index + 1}`), {
-          member: session.member,
-          goal: session.goal,
-          trainer: session.trainer,
-          status: session.status,
-          time: session.time,
-          createdAt: serverTimestamp(),
-        })
-      })
-
-      demoPackages.forEach((item, index) => {
-        batch.set(doc(db, 'packages', `package-${index + 1}`), {
-          name: item.name,
-          price:
-            typeof item.price === 'string'
-              ? Number(item.price.replace(/[^\d]/g, '')) || 0
-              : item.price,
-          rule: item.rule,
-          sales: item.sales,
-          createdAt: serverTimestamp(),
-        })
-      })
-
-      demoNotes.forEach((note, index) => {
-        batch.set(doc(db, 'sessionNotes', `note-${index + 1}`), {
-          member: note.member,
-          title: note.title,
-          body: note.body,
-          updatedAt: serverTimestamp(),
-        })
-      })
-
-      await batch.commit()
-      setSeedStatus('샘플 데이터 입력 완료')
-      setSyncStatus('Firebase 동기화 완료')
-    } catch (error) {
-      console.error('Firebase seed failed:', error)
-      setSeedStatus('샘플 데이터 입력 실패')
-      setErrorMessage(error?.message ?? '샘플 데이터 입력 중 오류가 발생했습니다.')
-    }
-  }
-
-  async function submitMember() {
-    if (!memberForm.name.trim() || !memberForm.phone.trim()) {
-      setMemberFeedback('회원 이름과 연락처는 필수입니다.')
-      return
-    }
-
-    try {
-      await addDoc(collection(db, 'members'), {
-        name: memberForm.name.trim(),
-        phone: memberForm.phone.trim(),
-        pass: memberForm.pass.trim() || '이용권 미설정',
-        remainingSessions: Number(memberForm.remainingSessions) || 0,
-        expiryDate: memberForm.expiryDate ? new Date(memberForm.expiryDate) : null,
-        status: memberForm.status,
-        createdAt: serverTimestamp(),
-      })
-      setMemberFeedback('회원이 저장되었습니다.')
-      setMemberForm(initialMemberForm)
-    } catch (error) {
-      console.error('member create failed:', error)
-      setMemberFeedback(error?.message ?? '회원 저장에 실패했습니다.')
-    }
-  }
-
-  async function submitAppointment() {
-    if (!appointmentForm.member.trim() || !appointmentForm.startAt) {
-      setAppointmentFeedback('회원 이름과 예약 일시는 필수입니다.')
-      return
-    }
-
-    try {
-      await addDoc(collection(db, 'appointments'), {
-        member: appointmentForm.member.trim(),
-        trainer: appointmentForm.trainer.trim() || '-',
-        goal: appointmentForm.goal.trim() || '목표 미설정',
-        startAt: new Date(appointmentForm.startAt),
-        status: appointmentForm.status,
-        createdAt: serverTimestamp(),
-      })
-      setAppointmentFeedback('예약이 저장되었습니다.')
-      setAppointmentForm(initialAppointmentForm)
-    } catch (error) {
-      console.error('appointment create failed:', error)
-      setAppointmentFeedback(error?.message ?? '예약 저장에 실패했습니다.')
-    }
-  }
-
-  async function submitPackage() {
-    if (!packageForm.name.trim() || !packageForm.price) {
-      setPackageFeedback('상품명과 가격은 필수입니다.')
-      return
-    }
-
-    try {
-      await addDoc(collection(db, 'packages'), {
-        name: packageForm.name.trim(),
-        price: Number(packageForm.price) || 0,
-        validDays: Number(packageForm.validDays) || 0,
-        monthlySales: Number(packageForm.monthlySales) || 0,
-        createdAt: serverTimestamp(),
-      })
-      setPackageFeedback('이용권 상품이 저장되었습니다.')
-      setPackageForm(initialPackageForm)
-    } catch (error) {
-      console.error('package create failed:', error)
-      setPackageFeedback(error?.message ?? '이용권 저장에 실패했습니다.')
-    }
-  }
-
-  async function submitNote() {
-    if (!noteForm.member.trim() || !noteForm.title.trim()) {
-      setNoteFeedback('회원 이름과 메모 제목은 필수입니다.')
-      return
-    }
-
-    try {
-      await addDoc(collection(db, 'sessionNotes'), {
-        member: noteForm.member.trim(),
-        title: noteForm.title.trim(),
-        body: noteForm.body.trim(),
-        updatedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-      })
-      setNoteFeedback('메모가 저장되었습니다.')
-      setNoteForm(initialNoteForm)
-    } catch (error) {
-      console.error('note create failed:', error)
-      setNoteFeedback(error?.message ?? '메모 저장에 실패했습니다.')
-    }
-  }
-
-  useEffect(() => {
-    const unsubscribers = []
-    let memberLoaded = false
-    let appointmentLoaded = false
-    let packageLoaded = false
-    let noteLoaded = false
-
-    const updateStatus = () => {
-      if (memberLoaded && appointmentLoaded && packageLoaded && noteLoaded) {
-        setSyncStatus('Firebase 동기화 완료')
-      }
-    }
-
-    unsubscribers.push(
-      onSnapshot(
-        query(collection(db, 'members')),
-        (snapshot) => {
-          const nextMembers = snapshot.docs.map(mapMember)
-          setMembers(nextMembers.length > 0 ? nextMembers : demoMembers)
-          memberLoaded = true
-          updateStatus()
-        },
-        (error) => {
-          console.error('members read failed:', error)
-          setSyncStatus('Firebase 읽기 실패')
-          setErrorMessage(error?.message ?? 'members 컬렉션 읽기에 실패했습니다.')
-        },
-      ),
-    )
-
-    unsubscribers.push(
-      onSnapshot(
-        query(collection(db, 'appointments')),
-        (snapshot) => {
-          const nextAppointments = snapshot.docs.map(mapAppointment)
-          setSessions(nextAppointments.length > 0 ? nextAppointments : demoSessions)
-          appointmentLoaded = true
-          updateStatus()
-        },
-        (error) => {
-          console.error('appointments read failed:', error)
-          setSyncStatus('Firebase 읽기 실패')
-          setErrorMessage(error?.message ?? 'appointments 컬렉션 읽기에 실패했습니다.')
-        },
-      ),
-    )
-
-    unsubscribers.push(
-      onSnapshot(
-        query(collection(db, 'packages')),
-        (snapshot) => {
-          const nextPackages = snapshot.docs.map(mapPackage)
-          setPackages(nextPackages.length > 0 ? nextPackages : demoPackages)
-          packageLoaded = true
-          updateStatus()
-        },
-        (error) => {
-          console.error('packages read failed:', error)
-          setSyncStatus('Firebase 읽기 실패')
-          setErrorMessage(error?.message ?? 'packages 컬렉션 읽기에 실패했습니다.')
-        },
-      ),
-    )
-
-    unsubscribers.push(
-      onSnapshot(
-        query(collection(db, 'sessionNotes')),
-        (snapshot) => {
-          const nextNotes = snapshot.docs.map(mapNote)
-          setNotes(nextNotes.length > 0 ? nextNotes : demoNotes)
-          noteLoaded = true
-          updateStatus()
-        },
-        (error) => {
-          console.error('sessionNotes read failed:', error)
-          setSyncStatus('Firebase 읽기 실패')
-          setErrorMessage(error?.message ?? 'sessionNotes 컬렉션 읽기에 실패했습니다.')
-        },
-      ),
-    )
-
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe())
-    }
-  }, [])
-
-  const alerts = buildAlerts(members)
-  const calendarDays = buildCalendar(sessions)
-  const stats = buildStats(members, sessions)
-
-  const views = {
-    dashboard: (
-      <DashboardView
-        alerts={alerts}
-        members={members}
-        sessions={sessions}
-        stats={stats}
-        syncStatus={syncStatus}
-        onQuickAction={setActiveView}
-      />
-    ),
-    members: (
-      <MembersView
-        members={members}
-        form={memberForm}
-        onChange={handleFieldChange(setMemberForm)}
-        onSubmit={submitMember}
-        feedback={memberFeedback}
-      />
-    ),
-    schedule: (
-      <ScheduleView
-        calendarDays={calendarDays}
-        form={appointmentForm}
-        onChange={handleFieldChange(setAppointmentForm)}
-        onSubmit={submitAppointment}
-        feedback={appointmentFeedback}
-      />
-    ),
-    passes: (
-      <PassesView
-        packages={packages}
-        form={packageForm}
-        onChange={handleFieldChange(setPackageForm)}
-        onSubmit={submitPackage}
-        feedback={packageFeedback}
-      />
-    ),
-    notes: (
-      <NotesView
-        notes={notes}
-        form={noteForm}
-        onChange={handleFieldChange(setNoteForm)}
-        onSubmit={submitNote}
-        feedback={noteFeedback}
-      />
-    ),
-  }
-
   return (
-    <main className="app-shell">
-      <div className="ambient ambient-left" />
-      <div className="ambient ambient-right" />
+    <main className="page-shell">
+      <div className="page-glow page-glow-left" />
+      <div className="page-glow page-glow-right" />
 
-      <section className="dashboard-frame">
-        <aside className="sidebar">
-          <div className="sidebar-top">
-            <div className="brand-block">
-              <p className="brand-mark">PT Flow</p>
-              <h1>1:1 PT 운영을 한 화면으로 정리</h1>
-              <p className="brand-copy">
-                회원권, 예약, 출석 차감, 재등록 타이밍까지 엑셀 없이 관리하는
-                운영 콘솔.
-              </p>
-            </div>
+      <section className="hero">
+        <div className="hero-copy">
+          <p className="hero-eyebrow">Freelance Web Portfolio</p>
+          <h1>작은 사업자가 바로 문의하고 싶은 웹사이트를 만드는 개발자</h1>
+          <p className="hero-description">
+            React로 사이트를 만드는 초보 개발자이지만, 예쁜 화면보다 먼저
+            &quot;누가 봐도 이해되고 바로 연락하게 되는 흐름&quot;을 만드는 데 집중하고 있습니다.
+            소개 페이지, 상담 유도형 랜딩 페이지, 소규모 브랜드 웹사이트를 제작합니다.
+          </p>
 
-            <nav className="menu">
-              {menuItems.map((item) => (
-                <button
-                  key={item.id}
-                  className={`menu-item ${activeView === item.id ? 'active' : ''}`}
-                  onClick={() => setActiveView(item.id)}
-                  type="button"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
+          <div className="hero-actions">
+            <a className="primary-link" href="#portfolio">
+              작업 예시 보기
+            </a>
+            <a className="secondary-link" href="#pricing">
+              가격 보기
+            </a>
           </div>
 
-          <div className="sidebar-card">
-            <p className="sidebar-label">오늘 매출</p>
-            <strong>₩1,240,000</strong>
-            <span>{syncStatus}</span>
-            <button className="sidebar-action" onClick={seedFirestore} type="button">
-              샘플 데이터 넣기
-            </button>
-            {seedStatus ? <p className="sidebar-feedback">{seedStatus}</p> : null}
-            {errorMessage ? <p className="sidebar-error">{errorMessage}</p> : null}
+          <ul className="hero-points">
+            <li>업종에 맞는 문구와 섹션 순서를 같이 정리합니다.</li>
+            <li>모바일에서도 읽기 쉬운 구조로 제작합니다.</li>
+            <li>수정이 쉬운 React 컴포넌트 구조를 기준으로 만듭니다.</li>
+          </ul>
+        </div>
+
+        <aside className="hero-panel">
+          <p className="panel-label">Positioning</p>
+          <h2>React로 만드는 1인 웹 제작 서비스</h2>
+          <div className="hero-metrics">
+            <article>
+              <strong>1</strong>
+              <span>업종에 집중한 설계</span>
+            </article>
+            <article>
+              <strong>3</strong>
+              <span>판매용 샘플 콘셉트</span>
+            </article>
+            <article>
+              <strong>100%</strong>
+              <span>모바일 우선 레이아웃</span>
+            </article>
+          </div>
+
+          <div className="quote-card">
+            <p>사이트는 코드 자랑용이 아니라, 사업 소개와 문의를 더 쉽게 만드는 도구여야 합니다.</p>
           </div>
         </aside>
+      </section>
 
-        <section className="content">{views[activeView]}</section>
+      <section className="section-grid">
+        <SectionTitle
+          eyebrow="What I Build"
+          title="이런 목적의 사이트를 만들고 싶습니다"
+          description="지금은 아무 사이트나 만드는 사람보다, 소규모 사업자를 위한 실전형 페이지를 만드는 사람으로 보이게 구성했습니다."
+        />
+        <div className="feature-grid">
+          {serviceHighlights.map((item) => (
+            <article className="feature-card" key={item.title}>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-grid section-split" id="portfolio">
+        <SectionTitle
+          eyebrow="Portfolio Concepts"
+          title="판매용으로 보여줄 작업 예시"
+          description="아직 실제 고객 작업이 많지 않아도, 업종별 샘플 콘셉트를 잘 만들면 충분히 포트폴리오 역할을 할 수 있습니다."
+        />
+        <div className="portfolio-list">
+          {portfolioProjects.map((project) => (
+            <article className="portfolio-card" key={project.title}>
+              <p className="card-tag">{project.category}</p>
+              <h3>{project.title}</h3>
+              <p>{project.summary}</p>
+              <strong>{project.outcome}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-grid">
+        <SectionTitle
+          eyebrow="Process"
+          title="작업은 이런 순서로 진행합니다"
+          description="이 섹션은 실력보다 신뢰를 보여주는 역할을 합니다. 의뢰인은 작업 흐름이 보이면 더 안심합니다."
+        />
+        <div className="process-grid">
+          {processSteps.map((item) => (
+            <article className="process-card" key={item.step}>
+              <span>{item.step}</span>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-grid" id="pricing">
+        <SectionTitle
+          eyebrow="Pricing"
+          title="가격은 단순하게 보여줍니다"
+          description="처음에는 복잡한 견적표보다, 고객이 바로 이해할 수 있는 3단 구성으로 시작하는 편이 좋습니다."
+        />
+        <div className="pricing-grid">
+          {pricingPlans.map((plan) => (
+            <article className="pricing-card" key={plan.name}>
+              <p className="card-tag">{plan.name}</p>
+              <h3>{plan.price}</h3>
+              <p className="pricing-target">{plan.target}</p>
+              <ul>
+                {plan.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="closing-banner">
+        <div>
+          <p className="hero-eyebrow">Next Step</p>
+          <h2>사업 소개가 잘 되는 첫 사이트가 필요하다면 같이 정리해드립니다</h2>
+          <p>
+            업종, 필요한 페이지 수, 원하는 분위기를 정리해서 맞는 랜딩 페이지 형태로 제안할 수 있습니다.
+          </p>
+        </div>
+        <a className="primary-link" href="mailto:hello@example.com">
+          문의하기
+        </a>
       </section>
     </main>
   )
