@@ -332,6 +332,12 @@ button {
   min-height: 320px;
 }
 
+.thumb-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
 .detail-thumb {
   min-height: 640px;
 }
@@ -379,6 +385,25 @@ button {
   background: rgba(17, 17, 17, 0.72);
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.wishlist-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+  border-radius: 999px;
+  color: #faf7f1;
+  background: rgba(17, 17, 17, 0.52);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.wishlist-button.active {
+  background: #111111;
 }
 
 .product-copy,
@@ -485,6 +510,11 @@ button {
 
 .cart-page-grid {
   grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.wishlist-page {
+  display: grid;
+  gap: 18px;
 }
 
 .products-toolbar {

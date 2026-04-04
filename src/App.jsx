@@ -22,12 +22,33 @@ function SectionHeader({ label, title, description }) {
   )
 }
 
-function ProductCard({ product }) {
+function WishlistButton({ active, onToggle }) {
+  return (
+    <button
+      aria-label={active ? '찜 해제' : '찜하기'}
+      className={`wishlist-button ${active ? 'active' : ''}`}
+      onClick={onToggle}
+      type="button"
+    >
+      ♥
+    </button>
+  )
+}
+
+function ProductCard({ product, isLiked, onToggleWishlist }) {
   return (
     <article className="product-card">
-      <Link className={`product-thumb ${product.tone}`} to={`/products/${product.id}`}>
+      <div className={`product-thumb ${product.tone}`}>
         <span className="product-badge">{product.badge}</span>
-      </Link>
+        <WishlistButton
+          active={isLiked}
+          onToggle={(event) => {
+            event.stopPropagation()
+            onToggleWishlist(product.id)
+          }}
+        />
+        <Link className="thumb-link" to={`/products/${product.id}`} />
+      </div>
       <div className="product-copy">
         <p>{product.brand}</p>
         <h3>{product.name}</h3>
@@ -69,7 +90,7 @@ function CategoryFilter({ activeCategory, activeSort }) {
   )
 }
 
-function Layout({ cartCount, children }) {
+function Layout({ cartCount, wishlistCount, children }) {
   return (
     <main className="store-shell">
       <div className="noise-grid" />
@@ -82,6 +103,7 @@ function Layout({ cartCount, children }) {
           <Link to="/">HOME</Link>
           <Link to="/products">SHOP</Link>
           <Link to="/products?category=Outer">OUTER</Link>
+          <Link to="/wishlist">LIKE ({wishlistCount})</Link>
           <Link to="/cart">CART ({cartCount})</Link>
         </nav>
       </header>
@@ -91,7 +113,7 @@ function Layout({ cartCount, children }) {
   )
 }
 
-function HomePage() {
+function HomePage({ likedIds, onToggleWishlist }) {
   return (
     <>
       <section className="hero-banner">
@@ -148,7 +170,12 @@ function HomePage() {
             />
             <div className="product-grid">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  isLiked={likedIds.includes(product.id)}
+                  key={product.id}
+                  onToggleWishlist={onToggleWishlist}
+                  product={product}
+                />
               ))}
             </div>
           </section>
@@ -189,7 +216,7 @@ function HomePage() {
   )
 }
 
-function ProductsPage() {
+function ProductsPage({ likedIds, onToggleWishlist }) {
   const [searchParams] = useSearchParams()
   const categoryParam = searchParams.get('category')
   const sortParam = searchParams.get('sort')
@@ -245,14 +272,19 @@ function ProductsPage() {
 
       <div className="product-grid product-grid-wide">
         {visibleProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard
+            isLiked={likedIds.includes(product.id)}
+            key={product.id}
+            onToggleWishlist={onToggleWishlist}
+            product={product}
+          />
         ))}
       </div>
     </section>
   )
 }
 
-function ProductDetailPage({ onAddToCart }) {
+function ProductDetailPage({ likedIds, onAddToCart, onToggleWishlist }) {
   const { productId } = useParams()
   const [selectedSize, setSelectedSize] = useState('')
   const product = products.find((item) => item.id === productId)
@@ -269,11 +301,13 @@ function ProductDetailPage({ onAddToCart }) {
   }
 
   const size = selectedSize || product.sizes[0]
+  const isLiked = likedIds.includes(product.id)
 
   return (
     <section className="page-panel product-detail-page">
       <div className={`detail-thumb ${product.tone}`}>
         <span className="product-badge">{product.badge}</span>
+        <WishlistButton active={isLiked} onToggle={() => onToggleWishlist(product.id)} />
       </div>
 
       <div className="detail-copy">
@@ -371,8 +405,43 @@ function CartPage({ cartItems }) {
   )
 }
 
+function WishlistPage({ likedIds, onToggleWishlist }) {
+  const likedProducts = products.filter((product) => likedIds.includes(product.id))
+
+  return (
+    <section className="page-panel wishlist-page">
+      <SectionHeader
+        label="Wishlist"
+        title="찜한 상품"
+        description="상품 id 배열만 따로 관리해서, 여러 화면에서 같은 찜 상태를 공유하도록 만들었습니다."
+      />
+
+      {likedProducts.length === 0 ? (
+        <div className="empty-page">
+          <h1>아직 찜한 상품이 없습니다.</h1>
+          <Link className="filled-button" to="/products">
+            상품 보러 가기
+          </Link>
+        </div>
+      ) : (
+        <div className="product-grid product-grid-wide">
+          {likedProducts.map((product) => (
+            <ProductCard
+              isLiked={likedIds.includes(product.id)}
+              key={product.id}
+              onToggleWishlist={onToggleWishlist}
+              product={product}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function App() {
   const [cartItems, setCartItems] = useState([])
+  const [likedIds, setLikedIds] = useState([])
 
   function handleAddToCart(product, size) {
     setCartItems((prev) => [
@@ -389,13 +458,38 @@ export default function App() {
     ])
   }
 
+  function handleToggleWishlist(productId) {
+    setLikedIds((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId],
+    )
+  }
+
   return (
     <BrowserRouter>
-      <Layout cartCount={cartItems.length}>
+      <Layout cartCount={cartItems.length} wishlistCount={likedIds.length}>
         <Routes>
-          <Route element={<HomePage />} path="/" />
-          <Route element={<ProductsPage />} path="/products" />
-          <Route element={<ProductDetailPage onAddToCart={handleAddToCart} />} path="/products/:productId" />
+          <Route
+            element={<HomePage likedIds={likedIds} onToggleWishlist={handleToggleWishlist} />}
+            path="/"
+          />
+          <Route
+            element={<ProductsPage likedIds={likedIds} onToggleWishlist={handleToggleWishlist} />}
+            path="/products"
+          />
+          <Route
+            element={
+              <ProductDetailPage
+                likedIds={likedIds}
+                onAddToCart={handleAddToCart}
+                onToggleWishlist={handleToggleWishlist}
+              />
+            }
+            path="/products/:productId"
+          />
+          <Route
+            element={<WishlistPage likedIds={likedIds} onToggleWishlist={handleToggleWishlist} />}
+            path="/wishlist"
+          />
           <Route element={<CartPage cartItems={cartItems} />} path="/cart" />
         </Routes>
       </Layout>
