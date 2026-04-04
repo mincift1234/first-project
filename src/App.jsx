@@ -1,62 +1,10 @@
-const categories = ['All', 'Outer', 'Top', 'Bottom', 'Shoes', 'Bag']
+import { useMemo, useState } from 'react'
+import { BrowserRouter, Link, Route, Routes, useParams } from 'react-router-dom'
+import { categories, editorialPicks, products, rankings } from './data/products'
 
-const featuredProducts = [
-  {
-    id: 1,
-    brand: 'NEUTRA STUDIO',
-    name: 'Washed Leather Blouson',
-    price: '189,000원',
-    badge: 'NEW',
-    tone: 'charcoal',
-  },
-  {
-    id: 2,
-    brand: 'OFF GRID',
-    name: 'Utility Parachute Pants',
-    price: '94,000원',
-    badge: 'BEST',
-    tone: 'sand',
-  },
-  {
-    id: 3,
-    brand: 'MELLOW FORM',
-    name: 'Soft Knit Zip Hoodie',
-    price: '76,000원',
-    badge: 'LIMITED',
-    tone: 'olive',
-  },
-  {
-    id: 4,
-    brand: 'RAW ROUTE',
-    name: 'Vintage Runner Sneakers',
-    price: '128,000원',
-    badge: 'RESTOCK',
-    tone: 'stone',
-  },
-]
-
-const editorialPicks = [
-  {
-    title: '봄 아우터 기획전',
-    description: '가벼운 레더, 바람막이, 블루종 중심으로 지금 입기 좋은 실루엣을 모았습니다.',
-  },
-  {
-    title: '톤다운 컬러 셀렉션',
-    description: '블랙, 카키, 샌드, 그레이처럼 코디에 바로 섞기 쉬운 색감 위주로 구성했습니다.',
-  },
-]
-
-const rankings = [
-  { rank: '01', name: 'Wide Denim', brand: 'Morrow' },
-  { rank: '02', name: 'Track Windbreaker', brand: 'Archive Unit' },
-  { rank: '03', name: 'Square Shoulder Bag', brand: 'Luma' },
-  { rank: '04', name: 'Heavy Cotton Tee', brand: 'Noble Standard' },
-]
-
-const cartItems = [
-  { name: 'Washed Leather Blouson', option: 'Black / M', price: '189,000원' },
-  { name: 'Vintage Runner Sneakers', option: 'Grey / 270', price: '128,000원' },
-]
+function formatPrice(value) {
+  return new Intl.NumberFormat('ko-KR').format(value) + '원'
+}
 
 function SectionHeader({ label, title, description }) {
   return (
@@ -71,40 +19,50 @@ function SectionHeader({ label, title, description }) {
 function ProductCard({ product }) {
   return (
     <article className="product-card">
-      <div className={`product-thumb ${product.tone}`}>
+      <Link className={`product-thumb ${product.tone}`} to={`/products/${product.id}`}>
         <span className="product-badge">{product.badge}</span>
-      </div>
+      </Link>
       <div className="product-copy">
         <p>{product.brand}</p>
         <h3>{product.name}</h3>
-        <strong>{product.price}</strong>
+        <strong>{formatPrice(product.price)}</strong>
       </div>
     </article>
   )
 }
 
-export default function App() {
+function Layout({ cartCount, children }) {
   return (
     <main className="store-shell">
       <div className="noise-grid" />
 
       <header className="topbar">
-        <p className="logo">THREAD ROOM</p>
+        <Link className="logo-link" to="/">
+          <p className="logo">THREAD ROOM</p>
+        </Link>
         <nav className="topnav">
-          <a href="#new-arrivals">NEW</a>
-          <a href="#curation">CURATION</a>
-          <a href="#ranking">RANKING</a>
-          <a href="#cart">CART</a>
+          <Link to="/">HOME</Link>
+          <Link to="/#new-arrivals">NEW</Link>
+          <Link to="/#curation">CURATION</Link>
+          <Link to="/cart">CART ({cartCount})</Link>
         </nav>
       </header>
 
+      {children}
+    </main>
+  )
+}
+
+function HomePage() {
+  return (
+    <>
       <section className="hero-banner">
         <div className="hero-copy">
           <p className="eyebrow">2026 Spring Edit</p>
           <h1>무신사 감성으로 보는 패션 커머스 홈 화면</h1>
           <p className="hero-text">
-            실제 쇼핑몰처럼 보이도록 브랜드 무드, 상품 카드, 랭킹, 기획전, 장바구니 요약을 한 화면에 담은
-            React 데모입니다.
+            실제 쇼핑몰처럼 보이도록 브랜드 무드, 상품 카드, 랭킹, 기획전, 장바구니 흐름을 React로 연습하는
+            데모입니다.
           </p>
           <div className="hero-actions">
             <a className="filled-button" href="#new-arrivals">
@@ -144,10 +102,10 @@ export default function App() {
             <SectionHeader
               label="New Arrivals"
               title="지금 메인에 보여줄 상품 카드"
-              description="상품 이미지가 없어도 톤과 레이아웃만으로 커머스 느낌이 나게 설계했습니다."
+              description="카드를 누르면 상세 페이지로 이동하도록 연결했습니다."
             />
             <div className="product-grid">
-              {featuredProducts.map((product) => (
+              {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -183,35 +141,158 @@ export default function App() {
               ))}
             </div>
           </section>
-
-          <section className="side-panel" id="cart">
-            <SectionHeader
-              label="Cart Preview"
-              title="장바구니 미리보기"
-              description="사용자가 바로 결제로 이어질 수 있게 요약 정보를 작게 보여줍니다."
-            />
-            <div className="cart-list">
-              {cartItems.map((item) => (
-                <article className="cart-item" key={item.name}>
-                  <div className="cart-thumb" />
-                  <div>
-                    <h3>{item.name}</h3>
-                    <p>{item.option}</p>
-                  </div>
-                  <strong>{item.price}</strong>
-                </article>
-              ))}
-            </div>
-            <div className="cart-total">
-              <span>Total</span>
-              <strong>317,000원</strong>
-            </div>
-            <button className="filled-button full-width" type="button">
-              결제 진행
-            </button>
-          </section>
         </aside>
       </section>
-    </main>
+    </>
+  )
+}
+
+function ProductDetailPage({ onAddToCart }) {
+  const { productId } = useParams()
+  const [selectedSize, setSelectedSize] = useState('')
+  const product = products.find((item) => item.id === productId)
+
+  if (!product) {
+    return (
+      <section className="page-panel empty-page">
+        <h1>상품을 찾을 수 없습니다.</h1>
+        <Link className="filled-button" to="/">
+          홈으로 돌아가기
+        </Link>
+      </section>
+    )
+  }
+
+  const size = selectedSize || product.sizes[0]
+
+  return (
+    <section className="page-panel product-detail-page">
+      <div className={`detail-thumb ${product.tone}`}>
+        <span className="product-badge">{product.badge}</span>
+      </div>
+
+      <div className="detail-copy">
+        <p className="detail-brand">{product.brand}</p>
+        <h1>{product.name}</h1>
+        <strong>{formatPrice(product.price)}</strong>
+        <p className="detail-description">{product.description}</p>
+
+        <div className="detail-block">
+          <span className="detail-label">사이즈 선택</span>
+          <div className="size-grid">
+            {product.sizes.map((item) => (
+              <button
+                className={`size-chip ${size === item ? 'active' : ''}`}
+                key={item}
+                onClick={() => setSelectedSize(item)}
+                type="button"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="detail-block">
+          <span className="detail-label">상품 포인트</span>
+          <ul className="detail-list">
+            {product.details.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="detail-actions">
+          <button className="filled-button" onClick={() => onAddToCart(product, size)} type="button">
+            장바구니 담기
+          </button>
+          <Link className="ghost-dark-button" to="/cart">
+            장바구니 보기
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function CartPage({ cartItems }) {
+  const totalPrice = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.price, 0),
+    [cartItems],
+  )
+
+  return (
+    <section className="page-panel cart-page">
+      <SectionHeader
+        label="Cart"
+        title="장바구니"
+        description="상세 페이지에서 담은 상품이 여기에 쌓이도록 가장 기본적인 상태 관리를 붙였습니다."
+      />
+
+      {cartItems.length === 0 ? (
+        <div className="empty-page">
+          <h1>장바구니가 비어 있습니다.</h1>
+          <Link className="filled-button" to="/">
+            상품 보러 가기
+          </Link>
+        </div>
+      ) : (
+        <div className="cart-page-grid">
+          <div className="cart-list-panel">
+            {cartItems.map((item) => (
+              <article className="cart-line" key={item.cartId}>
+                <div className={`cart-preview ${item.tone}`} />
+                <div>
+                  <p className="detail-brand">{item.brand}</p>
+                  <h3>{item.name}</h3>
+                  <span>선택 옵션: {item.size}</span>
+                </div>
+                <strong>{formatPrice(item.price)}</strong>
+              </article>
+            ))}
+          </div>
+
+          <aside className="order-summary">
+            <p className="panel-label">Order Summary</p>
+            <h2>{formatPrice(totalPrice)}</h2>
+            <span>총 상품 수 {cartItems.length}개</span>
+            <button className="filled-button full-width" type="button">
+              주문 계속하기
+            </button>
+          </aside>
+        </div>
+      )}
+    </section>
+  )
+}
+
+export default function App() {
+  const [cartItems, setCartItems] = useState([])
+
+  function handleAddToCart(product, size) {
+    setCartItems((prev) => [
+      ...prev,
+      {
+        cartId: `${product.id}-${size}-${prev.length + 1}`,
+        id: product.id,
+        name: product.name,
+        brand: product.brand,
+        price: product.price,
+        size,
+        tone: product.tone,
+      },
+    ])
+  }
+
+  return (
+    <BrowserRouter>
+      <Layout cartCount={cartItems.length}>
+        <Routes>
+          <Route element={<HomePage />} path="/" />
+          <Route element={<ProductDetailPage onAddToCart={handleAddToCart} />} path="/products/:productId" />
+          <Route element={<CartPage cartItems={cartItems} />} path="/cart" />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   )
 }
