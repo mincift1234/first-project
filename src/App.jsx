@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BrowserRouter, Link, Route, Routes, useParams } from 'react-router-dom'
+import { BrowserRouter, Link, Route, Routes, useParams, useSearchParams } from 'react-router-dom'
 import { categories, editorialPicks, products, rankings } from './data/products'
 
 function formatPrice(value) {
@@ -31,6 +31,23 @@ function ProductCard({ product }) {
   )
 }
 
+function CategoryFilter({ activeCategory }) {
+  return (
+    <section className="category-strip">
+      {categories.map((category) => {
+        const isActive = activeCategory === category
+        const target = category === 'All' ? '/products' : `/products?category=${category}`
+
+        return (
+          <Link className={`category-chip ${isActive ? 'active' : ''}`} key={category} to={target}>
+            {category}
+          </Link>
+        )
+      })}
+    </section>
+  )
+}
+
 function Layout({ cartCount, children }) {
   return (
     <main className="store-shell">
@@ -42,8 +59,8 @@ function Layout({ cartCount, children }) {
         </Link>
         <nav className="topnav">
           <Link to="/">HOME</Link>
-          <Link to="/#new-arrivals">NEW</Link>
-          <Link to="/#curation">CURATION</Link>
+          <Link to="/products">SHOP</Link>
+          <Link to="/products?category=Outer">OUTER</Link>
           <Link to="/cart">CART ({cartCount})</Link>
         </nav>
       </header>
@@ -65,12 +82,12 @@ function HomePage() {
             데모입니다.
           </p>
           <div className="hero-actions">
-            <a className="filled-button" href="#new-arrivals">
-              신상품 보기
-            </a>
-            <a className="ghost-button" href="#ranking">
-              랭킹 보기
-            </a>
+            <Link className="filled-button" to="/products">
+              전체 상품 보기
+            </Link>
+            <Link className="ghost-button" to="/products?category=Outer">
+              아우터 보기
+            </Link>
           </div>
         </div>
 
@@ -90,9 +107,13 @@ function HomePage() {
 
       <section className="category-strip" id="new-arrivals">
         {categories.map((category) => (
-          <button className={`category-chip ${category === 'All' ? 'active' : ''}`} key={category} type="button">
+          <Link
+            className={`category-chip ${category === 'All' ? 'active' : ''}`}
+            key={category}
+            to={category === 'All' ? '/products' : `/products?category=${category}`}
+          >
             {category}
-          </button>
+          </Link>
         ))}
       </section>
 
@@ -144,6 +165,41 @@ function HomePage() {
         </aside>
       </section>
     </>
+  )
+}
+
+function ProductsPage() {
+  const [searchParams] = useSearchParams()
+  const categoryParam = searchParams.get('category')
+  const activeCategory = categories.includes(categoryParam) ? categoryParam : 'All'
+  const visibleProducts =
+    activeCategory === 'All'
+      ? products
+      : products.filter((product) => product.category === activeCategory)
+
+  return (
+    <section className="page-panel products-page">
+      <SectionHeader
+        label="Shop"
+        title="상품 리스트"
+        description="카테고리를 누르면 URL이 바뀌고, 그 값에 맞는 상품만 보이도록 연결했습니다."
+      />
+
+      <CategoryFilter activeCategory={activeCategory} />
+
+      <div className="products-toolbar">
+        <span>
+          현재 카테고리: <strong>{activeCategory}</strong>
+        </span>
+        <span>총 {visibleProducts.length}개 상품</span>
+      </div>
+
+      <div className="product-grid product-grid-wide">
+        {visibleProducts.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -289,6 +345,7 @@ export default function App() {
       <Layout cartCount={cartItems.length}>
         <Routes>
           <Route element={<HomePage />} path="/" />
+          <Route element={<ProductsPage />} path="/products" />
           <Route element={<ProductDetailPage onAddToCart={handleAddToCart} />} path="/products/:productId" />
           <Route element={<CartPage cartItems={cartItems} />} path="/cart" />
         </Routes>

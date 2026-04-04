@@ -259,7 +259,8 @@ button {
 
 .content-grid,
 .product-detail-page,
-.cart-page-grid {
+.cart-page-grid,
+.products-page {
   position: relative;
   z-index: 1;
   display: grid;
@@ -304,6 +305,10 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.product-grid-wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .product-card {
@@ -478,6 +483,15 @@ button {
   grid-template-columns: minmax(0, 1fr) 320px;
 }
 
+.products-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 4px;
+  color: rgba(17, 17, 17, 0.72);
+}
+
 .cart-list-panel {
   display: grid;
   gap: 12px;
@@ -523,6 +537,7 @@ button {
   .hero-banner,
   .content-grid,
   .product-grid,
+  .product-grid-wide,
   .editorial-grid,
   .product-detail-page,
   .cart-page-grid {
@@ -556,7 +571,8 @@ button {
   .topbar,
   .hero-actions,
   .detail-actions,
-  .cart-line {
+  .cart-line,
+  .products-toolbar {
     display: grid;
   }
 
