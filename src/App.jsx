@@ -1,12 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { BrowserRouter, Link, Route, Routes, useParams, useSearchParams } from 'react-router-dom'
 import { categories, editorialPicks, products, rankings } from './data/products'
+
+const CART_STORAGE_KEY = 'thread-room-cart'
+const WISHLIST_STORAGE_KEY = 'thread-room-wishlist'
 
 const sortOptions = [
   { value: 'latest', label: '최신순' },
   { value: 'price-asc', label: '가격 낮은순' },
   { value: 'price-desc', label: '가격 높은순' },
 ]
+
+function readStorage(key, fallback) {
+  if (typeof window === 'undefined') {
+    return fallback
+  }
+
+  try {
+    const item = window.localStorage.getItem(key)
+    return item ? JSON.parse(item) : fallback
+  } catch {
+    return fallback
+  }
+}
 
 function formatPrice(value) {
   return new Intl.NumberFormat('ko-KR').format(value) + '원'
@@ -440,8 +456,8 @@ function WishlistPage({ likedIds, onToggleWishlist }) {
 }
 
 export default function App() {
-  const [cartItems, setCartItems] = useState([])
-  const [likedIds, setLikedIds] = useState([])
+  const [cartItems, setCartItems] = useState(() => readStorage(CART_STORAGE_KEY, []))
+  const [likedIds, setLikedIds] = useState(() => readStorage(WISHLIST_STORAGE_KEY, []))
 
   function handleAddToCart(product, size) {
     setCartItems((prev) => [
@@ -463,6 +479,14 @@ export default function App() {
       prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId],
     )
   }
+
+  useEffect(() => {
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems))
+  }, [cartItems])
+
+  useEffect(() => {
+    window.localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(likedIds))
+  }, [likedIds])
 
   return (
     <BrowserRouter>
