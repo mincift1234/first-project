@@ -2,6 +2,12 @@ import { useMemo, useState } from 'react'
 import { BrowserRouter, Link, Route, Routes, useParams, useSearchParams } from 'react-router-dom'
 import { categories, editorialPicks, products, rankings } from './data/products'
 
+const sortOptions = [
+  { value: 'latest', label: '최신순' },
+  { value: 'price-asc', label: '가격 낮은순' },
+  { value: 'price-desc', label: '가격 높은순' },
+]
+
 function formatPrice(value) {
   return new Intl.NumberFormat('ko-KR').format(value) + '원'
 }
@@ -31,12 +37,27 @@ function ProductCard({ product }) {
   )
 }
 
-function CategoryFilter({ activeCategory }) {
+function buildProductsLink(category, sort) {
+  const params = new URLSearchParams()
+
+  if (category && category !== 'All') {
+    params.set('category', category)
+  }
+
+  if (sort && sort !== 'latest') {
+    params.set('sort', sort)
+  }
+
+  const query = params.toString()
+  return query ? `/products?${query}` : '/products'
+}
+
+function CategoryFilter({ activeCategory, activeSort }) {
   return (
     <section className="category-strip">
       {categories.map((category) => {
         const isActive = activeCategory === category
-        const target = category === 'All' ? '/products' : `/products?category=${category}`
+        const target = buildProductsLink(category, activeSort)
 
         return (
           <Link className={`category-chip ${isActive ? 'active' : ''}`} key={category} to={target}>
@@ -171,11 +192,26 @@ function HomePage() {
 function ProductsPage() {
   const [searchParams] = useSearchParams()
   const categoryParam = searchParams.get('category')
+  const sortParam = searchParams.get('sort')
   const activeCategory = categories.includes(categoryParam) ? categoryParam : 'All'
-  const visibleProducts =
-    activeCategory === 'All'
-      ? products
-      : products.filter((product) => product.category === activeCategory)
+  const activeSort = sortOptions.some((option) => option.value === sortParam) ? sortParam : 'latest'
+
+  const visibleProducts = useMemo(() => {
+    const filtered =
+      activeCategory === 'All'
+        ? [...products]
+        : products.filter((product) => product.category === activeCategory)
+
+    if (activeSort === 'price-asc') {
+      filtered.sort((a, b) => a.price - b.price)
+    }
+
+    if (activeSort === 'price-desc') {
+      filtered.sort((a, b) => b.price - a.price)
+    }
+
+    return filtered
+  }, [activeCategory, activeSort])
 
   return (
     <section className="page-panel products-page">
@@ -185,13 +221,26 @@ function ProductsPage() {
         description="카테고리를 누르면 URL이 바뀌고, 그 값에 맞는 상품만 보이도록 연결했습니다."
       />
 
-      <CategoryFilter activeCategory={activeCategory} />
+      <CategoryFilter activeCategory={activeCategory} activeSort={activeSort} />
 
       <div className="products-toolbar">
         <span>
           현재 카테고리: <strong>{activeCategory}</strong>
         </span>
-        <span>총 {visibleProducts.length}개 상품</span>
+        <div className="toolbar-group">
+          <span>총 {visibleProducts.length}개 상품</span>
+          <div className="sort-tabs">
+            {sortOptions.map((option) => (
+              <Link
+                className={`sort-chip ${activeSort === option.value ? 'active' : ''}`}
+                key={option.value}
+                to={buildProductsLink(activeCategory, option.value)}
+              >
+                {option.label}
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="product-grid product-grid-wide">
