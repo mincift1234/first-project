@@ -547,6 +547,35 @@ button {
   border-top: 1px solid rgba(17, 17, 17, 0.08);
 }
 
+.quantity-controls,
+.cart-line-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quantity-controls {
+  margin-top: 12px;
+}
+
+.cart-line-actions {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.quantity-button,
+.remove-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.08);
+  cursor: pointer;
+}
+
+.remove-button {
+  color: rgba(17, 17, 17, 0.72);
+}
+
 .cart-line:first-child {
   border-top: 0;
   padding-top: 0;
@@ -641,5 +670,9 @@ button {
 
   .cart-line {
     grid-template-columns: 1fr;
+  }
+
+  .cart-line-actions {
+    align-items: start;
   }
 }

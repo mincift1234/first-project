@@ -370,9 +370,9 @@ function ProductDetailPage({ likedIds, onAddToCart, onToggleWishlist }) {
   )
 }
 
-function CartPage({ cartItems }) {
+function CartPage({ cartItems, onDecreaseQuantity, onIncreaseQuantity, onRemoveCartItem }) {
   const totalPrice = useMemo(
-    () => cartItems.reduce((sum, item) => sum + item.price, 0),
+    () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cartItems],
   )
 
@@ -401,8 +401,22 @@ function CartPage({ cartItems }) {
                   <p className="detail-brand">{item.brand}</p>
                   <h3>{item.name}</h3>
                   <span>선택 옵션: {item.size}</span>
+                  <div className="quantity-controls">
+                    <button className="quantity-button" onClick={() => onDecreaseQuantity(item.cartId)} type="button">
+                      -
+                    </button>
+                    <strong>{item.quantity}</strong>
+                    <button className="quantity-button" onClick={() => onIncreaseQuantity(item.cartId)} type="button">
+                      +
+                    </button>
+                  </div>
                 </div>
-                <strong>{formatPrice(item.price)}</strong>
+                <div className="cart-line-actions">
+                  <strong>{formatPrice(item.price * item.quantity)}</strong>
+                  <button className="remove-button" onClick={() => onRemoveCartItem(item.cartId)} type="button">
+                    삭제
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -410,7 +424,7 @@ function CartPage({ cartItems }) {
           <aside className="order-summary">
             <p className="panel-label">Order Summary</p>
             <h2>{formatPrice(totalPrice)}</h2>
-            <span>총 상품 수 {cartItems.length}개</span>
+            <span>총 상품 수 {cartItems.reduce((sum, item) => sum + item.quantity, 0)}개</span>
             <button className="filled-button full-width" type="button">
               주문 계속하기
             </button>
@@ -468,6 +482,7 @@ export default function App() {
         name: product.name,
         brand: product.brand,
         price: product.price,
+        quantity: 1,
         size,
         tone: product.tone,
       },
@@ -478,6 +493,24 @@ export default function App() {
     setLikedIds((prev) =>
       prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId],
     )
+  }
+
+  function handleIncreaseQuantity(cartId) {
+    setCartItems((prev) =>
+      prev.map((item) => (item.cartId === cartId ? { ...item, quantity: item.quantity + 1 } : item)),
+    )
+  }
+
+  function handleDecreaseQuantity(cartId) {
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.cartId === cartId ? { ...item, quantity: Math.max(1, item.quantity - 1) } : item,
+      ),
+    )
+  }
+
+  function handleRemoveCartItem(cartId) {
+    setCartItems((prev) => prev.filter((item) => item.cartId !== cartId))
   }
 
   useEffect(() => {
@@ -514,7 +547,17 @@ export default function App() {
             element={<WishlistPage likedIds={likedIds} onToggleWishlist={handleToggleWishlist} />}
             path="/wishlist"
           />
-          <Route element={<CartPage cartItems={cartItems} />} path="/cart" />
+          <Route
+            element={
+              <CartPage
+                cartItems={cartItems}
+                onDecreaseQuantity={handleDecreaseQuantity}
+                onIncreaseQuantity={handleIncreaseQuantity}
+                onRemoveCartItem={handleRemoveCartItem}
+              />
+            }
+            path="/cart"
+          />
         </Routes>
       </Layout>
     </BrowserRouter>
