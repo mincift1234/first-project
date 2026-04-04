@@ -1,239 +1,216 @@
-const serviceHighlights = [
+const categories = ['All', 'Outer', 'Top', 'Bottom', 'Shoes', 'Bag']
+
+const featuredProducts = [
   {
-    title: '사업이 바로 이해되는 첫 화면',
-    description:
-      '사이트에 들어오자마자 누가 봐도 업종, 강점, 문의 방법이 보이게 구성합니다.',
+    id: 1,
+    brand: 'NEUTRA STUDIO',
+    name: 'Washed Leather Blouson',
+    price: '189,000원',
+    badge: 'NEW',
+    tone: 'charcoal',
   },
   {
-    title: '모바일에서 보기 편한 구조',
-    description:
-      '실제 방문자는 모바일이 많기 때문에 작은 화면에서도 버튼과 정보가 먼저 보이게 만듭니다.',
+    id: 2,
+    brand: 'OFF GRID',
+    name: 'Utility Parachute Pants',
+    price: '94,000원',
+    badge: 'BEST',
+    tone: 'sand',
   },
   {
-    title: '수정하기 쉬운 섹션 설계',
-    description:
-      '나중에 문구, 후기, 가격, 사진을 바꾸기 쉽도록 반복 가능한 섹션으로 나눠둡니다.',
+    id: 3,
+    brand: 'MELLOW FORM',
+    name: 'Soft Knit Zip Hoodie',
+    price: '76,000원',
+    badge: 'LIMITED',
+    tone: 'olive',
+  },
+  {
+    id: 4,
+    brand: 'RAW ROUTE',
+    name: 'Vintage Runner Sneakers',
+    price: '128,000원',
+    badge: 'RESTOCK',
+    tone: 'stone',
   },
 ]
 
-const processSteps = [
+const editorialPicks = [
   {
-    step: '01',
-    title: '업종과 목표 정리',
-    description: '누구에게 보여줄 사이트인지, 문의를 받을지 예약을 받을지 먼저 정합니다.',
+    title: '봄 아우터 기획전',
+    description: '가벼운 레더, 바람막이, 블루종 중심으로 지금 입기 좋은 실루엣을 모았습니다.',
   },
   {
-    step: '02',
-    title: '문구와 화면 흐름 설계',
-    description: '첫 화면, 서비스 소개, 후기, 가격, 문의 섹션 순서를 잡고 카피를 맞춥니다.',
-  },
-  {
-    step: '03',
-    title: 'React로 제작',
-    description: '반응형 레이아웃과 재사용 가능한 컴포넌트로 빠르게 제작합니다.',
-  },
-  {
-    step: '04',
-    title: '배포와 수정',
-    description: '실제 오픈 후에도 문구와 섹션을 수정할 수 있게 구조를 정리해 전달합니다.',
+    title: '톤다운 컬러 셀렉션',
+    description: '블랙, 카키, 샌드, 그레이처럼 코디에 바로 섞기 쉬운 색감 위주로 구성했습니다.',
   },
 ]
 
-const portfolioProjects = [
-  {
-    category: 'PT 스튜디오',
-    title: '예약 문의가 바로 보이는 소개형 사이트',
-    summary:
-      '가격표, 위치, 후기, 상담 신청 버튼을 메인 흐름에 넣어 첫 방문자가 바로 행동하게 만드는 구성입니다.',
-    outcome: '목표: 소개 + 상담 유도',
-  },
-  {
-    category: '카페 / 소형 매장',
-    title: '분위기와 메뉴가 먼저 전달되는 브랜드 페이지',
-    summary:
-      '사진 중심 레이아웃으로 가게의 톤을 보여주고, 지도와 인스타그램 연결을 함께 배치합니다.',
-    outcome: '목표: 방문 유도 + 브랜드 인상',
-  },
-  {
-    category: '1인 전문가',
-    title: '서비스 설명이 깔끔한 상담형 랜딩 페이지',
-    summary:
-      '누가, 무엇을, 어떻게 도와주는지 한 페이지 안에서 정리해 신뢰를 높이는 구조입니다.',
-    outcome: '목표: 신뢰 형성 + 문의 전환',
-  },
+const rankings = [
+  { rank: '01', name: 'Wide Denim', brand: 'Morrow' },
+  { rank: '02', name: 'Track Windbreaker', brand: 'Archive Unit' },
+  { rank: '03', name: 'Square Shoulder Bag', brand: 'Luma' },
+  { rank: '04', name: 'Heavy Cotton Tee', brand: 'Noble Standard' },
 ]
 
-const pricingPlans = [
-  {
-    name: '기본형',
-    price: '40만원부터',
-    target: '처음 온라인 소개 페이지가 필요한 사장님',
-    features: ['메인 소개 페이지', '서비스/소개 섹션', '모바일 최적화', '기본 문의 버튼 연결'],
-  },
-  {
-    name: '문의형',
-    price: '70만원부터',
-    target: '상담 문의를 더 잘 받고 싶은 업종',
-    features: ['기본형 포함', '후기/사례 섹션', '가격 또는 프로그램 소개', '문의 폼 또는 채널 연결'],
-  },
-  {
-    name: '운영형',
-    price: '120만원부터',
-    target: '업데이트와 관리까지 함께 맡기고 싶은 경우',
-    features: ['문의형 포함', '추가 페이지 제작', '관리용 콘텐츠 구조화', '오픈 후 수정 지원'],
-  },
+const cartItems = [
+  { name: 'Washed Leather Blouson', option: 'Black / M', price: '189,000원' },
+  { name: 'Vintage Runner Sneakers', option: 'Grey / 270', price: '128,000원' },
 ]
 
-function SectionTitle({ eyebrow, title, description }) {
+function SectionHeader({ label, title, description }) {
   return (
-    <header className="section-title">
-      <p>{eyebrow}</p>
+    <header className="section-header">
+      <p>{label}</p>
       <h2>{title}</h2>
       <span>{description}</span>
     </header>
   )
 }
 
+function ProductCard({ product }) {
+  return (
+    <article className="product-card">
+      <div className={`product-thumb ${product.tone}`}>
+        <span className="product-badge">{product.badge}</span>
+      </div>
+      <div className="product-copy">
+        <p>{product.brand}</p>
+        <h3>{product.name}</h3>
+        <strong>{product.price}</strong>
+      </div>
+    </article>
+  )
+}
+
 export default function App() {
   return (
-    <main className="page-shell">
-      <div className="page-glow page-glow-left" />
-      <div className="page-glow page-glow-right" />
+    <main className="store-shell">
+      <div className="noise-grid" />
 
-      <section className="hero">
+      <header className="topbar">
+        <p className="logo">THREAD ROOM</p>
+        <nav className="topnav">
+          <a href="#new-arrivals">NEW</a>
+          <a href="#curation">CURATION</a>
+          <a href="#ranking">RANKING</a>
+          <a href="#cart">CART</a>
+        </nav>
+      </header>
+
+      <section className="hero-banner">
         <div className="hero-copy">
-          <p className="hero-eyebrow">Freelance Web Portfolio</p>
-          <h1>작은 사업자가 바로 문의하고 싶은 웹사이트를 만드는 개발자</h1>
-          <p className="hero-description">
-            React로 사이트를 만드는 초보 개발자이지만, 예쁜 화면보다 먼저
-            &quot;누가 봐도 이해되고 바로 연락하게 되는 흐름&quot;을 만드는 데 집중하고 있습니다.
-            소개 페이지, 상담 유도형 랜딩 페이지, 소규모 브랜드 웹사이트를 제작합니다.
+          <p className="eyebrow">2026 Spring Edit</p>
+          <h1>무신사 감성으로 보는 패션 커머스 홈 화면</h1>
+          <p className="hero-text">
+            실제 쇼핑몰처럼 보이도록 브랜드 무드, 상품 카드, 랭킹, 기획전, 장바구니 요약을 한 화면에 담은
+            React 데모입니다.
           </p>
-
           <div className="hero-actions">
-            <a className="primary-link" href="#portfolio">
-              작업 예시 보기
+            <a className="filled-button" href="#new-arrivals">
+              신상품 보기
             </a>
-            <a className="secondary-link" href="#pricing">
-              가격 보기
+            <a className="ghost-button" href="#ranking">
+              랭킹 보기
             </a>
           </div>
-
-          <ul className="hero-points">
-            <li>업종에 맞는 문구와 섹션 순서를 같이 정리합니다.</li>
-            <li>모바일에서도 읽기 쉬운 구조로 제작합니다.</li>
-            <li>수정이 쉬운 React 컴포넌트 구조를 기준으로 만듭니다.</li>
-          </ul>
         </div>
 
-        <aside className="hero-panel">
-          <p className="panel-label">Positioning</p>
-          <h2>React로 만드는 1인 웹 제작 서비스</h2>
-          <div className="hero-metrics">
-            <article>
-              <strong>1</strong>
-              <span>업종에 집중한 설계</span>
-            </article>
-            <article>
-              <strong>3</strong>
-              <span>판매용 샘플 콘셉트</span>
-            </article>
-            <article>
-              <strong>100%</strong>
-              <span>모바일 우선 레이아웃</span>
-            </article>
+        <aside className="hero-side">
+          <div className="hero-panel dark-panel">
+            <p className="panel-label">Drop Of The Week</p>
+            <h2>Urban Light Outerwear</h2>
+            <span>가벼운 텍스처와 어두운 톤의 레이어드 스타일을 중심으로 큐레이션했습니다.</span>
           </div>
-
-          <div className="quote-card">
-            <p>사이트는 코드 자랑용이 아니라, 사업 소개와 문의를 더 쉽게 만드는 도구여야 합니다.</p>
+          <div className="hero-panel light-panel">
+            <p className="panel-label">Style Memo</p>
+            <h2>실제 서비스처럼 보이게</h2>
+            <span>배너, 카드, 정보 밀도, CTA 배치를 함께 보여주는 홈 구성입니다.</span>
           </div>
         </aside>
       </section>
 
-      <section className="section-grid">
-        <SectionTitle
-          eyebrow="What I Build"
-          title="이런 목적의 사이트를 만들고 싶습니다"
-          description="지금은 아무 사이트나 만드는 사람보다, 소규모 사업자를 위한 실전형 페이지를 만드는 사람으로 보이게 구성했습니다."
-        />
-        <div className="feature-grid">
-          {serviceHighlights.map((item) => (
-            <article className="feature-card" key={item.title}>
-              <h3>{item.title}</h3>
-              <p>{item.description}</p>
-            </article>
-          ))}
-        </div>
+      <section className="category-strip" id="new-arrivals">
+        {categories.map((category) => (
+          <button className={`category-chip ${category === 'All' ? 'active' : ''}`} key={category} type="button">
+            {category}
+          </button>
+        ))}
       </section>
 
-      <section className="section-grid section-split" id="portfolio">
-        <SectionTitle
-          eyebrow="Portfolio Concepts"
-          title="판매용으로 보여줄 작업 예시"
-          description="아직 실제 고객 작업이 많지 않아도, 업종별 샘플 콘셉트를 잘 만들면 충분히 포트폴리오 역할을 할 수 있습니다."
-        />
-        <div className="portfolio-list">
-          {portfolioProjects.map((project) => (
-            <article className="portfolio-card" key={project.title}>
-              <p className="card-tag">{project.category}</p>
-              <h3>{project.title}</h3>
-              <p>{project.summary}</p>
-              <strong>{project.outcome}</strong>
-            </article>
-          ))}
-        </div>
-      </section>
+      <section className="content-grid">
+        <div className="main-column">
+          <section className="section-block">
+            <SectionHeader
+              label="New Arrivals"
+              title="지금 메인에 보여줄 상품 카드"
+              description="상품 이미지가 없어도 톤과 레이아웃만으로 커머스 느낌이 나게 설계했습니다."
+            />
+            <div className="product-grid">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
 
-      <section className="section-grid">
-        <SectionTitle
-          eyebrow="Process"
-          title="작업은 이런 순서로 진행합니다"
-          description="이 섹션은 실력보다 신뢰를 보여주는 역할을 합니다. 의뢰인은 작업 흐름이 보이면 더 안심합니다."
-        />
-        <div className="process-grid">
-          {processSteps.map((item) => (
-            <article className="process-card" key={item.step}>
-              <span>{item.step}</span>
-              <h3>{item.title}</h3>
-              <p>{item.description}</p>
-            </article>
-          ))}
+          <section className="editorial-grid" id="curation">
+            {editorialPicks.map((pick) => (
+              <article className="editorial-card" key={pick.title}>
+                <p className="eyebrow">Curated Edit</p>
+                <h3>{pick.title}</h3>
+                <span>{pick.description}</span>
+              </article>
+            ))}
+          </section>
         </div>
-      </section>
 
-      <section className="section-grid" id="pricing">
-        <SectionTitle
-          eyebrow="Pricing"
-          title="가격은 단순하게 보여줍니다"
-          description="처음에는 복잡한 견적표보다, 고객이 바로 이해할 수 있는 3단 구성으로 시작하는 편이 좋습니다."
-        />
-        <div className="pricing-grid">
-          {pricingPlans.map((plan) => (
-            <article className="pricing-card" key={plan.name}>
-              <p className="card-tag">{plan.name}</p>
-              <h3>{plan.price}</h3>
-              <p className="pricing-target">{plan.target}</p>
-              <ul>
-                {plan.features.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </div>
-      </section>
+        <aside className="side-column">
+          <section className="side-panel" id="ranking">
+            <SectionHeader
+              label="Ranking"
+              title="실시간 인기 아이템"
+              description="쇼핑몰 홈에서 자주 보이는 랭킹 박스를 단순한 구조로 넣었습니다."
+            />
+            <div className="ranking-list">
+              {rankings.map((item) => (
+                <article className="ranking-item" key={item.rank}>
+                  <strong>{item.rank}</strong>
+                  <div>
+                    <h3>{item.name}</h3>
+                    <span>{item.brand}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
 
-      <section className="closing-banner">
-        <div>
-          <p className="hero-eyebrow">Next Step</p>
-          <h2>사업 소개가 잘 되는 첫 사이트가 필요하다면 같이 정리해드립니다</h2>
-          <p>
-            업종, 필요한 페이지 수, 원하는 분위기를 정리해서 맞는 랜딩 페이지 형태로 제안할 수 있습니다.
-          </p>
-        </div>
-        <a className="primary-link" href="mailto:hello@example.com">
-          문의하기
-        </a>
+          <section className="side-panel" id="cart">
+            <SectionHeader
+              label="Cart Preview"
+              title="장바구니 미리보기"
+              description="사용자가 바로 결제로 이어질 수 있게 요약 정보를 작게 보여줍니다."
+            />
+            <div className="cart-list">
+              {cartItems.map((item) => (
+                <article className="cart-item" key={item.name}>
+                  <div className="cart-thumb" />
+                  <div>
+                    <h3>{item.name}</h3>
+                    <p>{item.option}</p>
+                  </div>
+                  <strong>{item.price}</strong>
+                </article>
+              ))}
+            </div>
+            <div className="cart-total">
+              <span>Total</span>
+              <strong>317,000원</strong>
+            </div>
+            <button className="filled-button full-width" type="button">
+              결제 진행
+            </button>
+          </section>
+        </aside>
       </section>
     </main>
   )
