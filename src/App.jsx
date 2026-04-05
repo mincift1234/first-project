@@ -19,6 +19,9 @@ const sortOptions = [
   { value: 'price-desc', label: '가격 높은순' },
 ]
 
+const FREE_SHIPPING_THRESHOLD = 150000
+const BASE_SHIPPING_FEE = 3000
+
 function readStorage(key, fallback) {
   if (typeof window === 'undefined') {
     return fallback
@@ -38,6 +41,17 @@ function formatPrice(value) {
 
 function formatReviewCount(value) {
   return new Intl.NumberFormat('ko-KR').format(value)
+}
+
+function getOrderAmounts(cartItems) {
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const shippingFee = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : BASE_SHIPPING_FEE
+
+  return {
+    subtotal,
+    shippingFee,
+    total: subtotal + shippingFee,
+  }
 }
 
 function SectionHeader({ label, title, description }) {
@@ -97,7 +111,7 @@ function ProductCard({ product, isLiked, onToggleWishlist }) {
   )
 }
 
-function buildProductsLink(category, sort) {
+function buildProductsLink(category, sort, searchQuery) {
   const params = new URLSearchParams()
 
   if (category && category !== 'All') {
@@ -108,16 +122,20 @@ function buildProductsLink(category, sort) {
     params.set('sort', sort)
   }
 
-  const query = params.toString()
-  return query ? `/products?${query}` : '/products'
+  if (searchQuery) {
+    params.set('q', searchQuery)
+  }
+
+  const queryString = params.toString()
+  return queryString ? `/products?${queryString}` : '/products'
 }
 
-function CategoryFilter({ activeCategory, activeSort }) {
+function CategoryFilter({ activeCategory, activeSort, activeQuery }) {
   return (
     <section className="category-strip">
       {categories.map((category) => {
         const isActive = activeCategory === category
-        const target = buildProductsLink(category, activeSort)
+        const target = buildProductsLink(category, activeSort, activeQuery)
 
         return (
           <Link className={`category-chip ${isActive ? 'active' : ''}`} key={category} to={target}>
@@ -204,16 +222,16 @@ function HomePage({ likedIds, onToggleWishlist }) {
       <section className="content-grid">
         <div className="main-column">
           <section className="section-block">
-              <SectionHeader
-                label="New Arrivals"
-                title="지금 메인에 보여줄 상품 카드"
-                description="가격, 할인율, 리뷰 수, 배송 메타를 같이 보여주도록 상품 카드 밀도를 높였습니다."
-              />
-              <div className="product-grid">
-                {featuredProducts.map((product) => (
-                  <ProductCard
-                    isLiked={likedIds.includes(product.id)}
-                    key={product.id}
+            <SectionHeader
+              label="New Arrivals"
+              title="지금 메인에 보여줄 상품 카드"
+              description="가격, 할인율, 리뷰 수, 배송 메타를 같이 보여주도록 상품 카드 밀도를 높였습니다."
+            />
+            <div className="product-grid">
+              {featuredProducts.map((product) => (
+                <ProductCard
+                  isLiked={likedIds.includes(product.id)}
+                  key={product.id}
                   onToggleWishlist={onToggleWishlist}
                   product={product}
                 />
@@ -258,17 +276,26 @@ function HomePage({ likedIds, onToggleWishlist }) {
 }
 
 function ProductsPage({ likedIds, onToggleWishlist }) {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const categoryParam = searchParams.get('category')
   const sortParam = searchParams.get('sort')
+  const queryParam = searchParams.get('q') ?? ''
   const activeCategory = categories.includes(categoryParam) ? categoryParam : 'All'
   const activeSort = sortOptions.some((option) => option.value === sortParam) ? sortParam : 'latest'
+  const normalizedQuery = queryParam.trim().toLowerCase()
 
   const visibleProducts = useMemo(() => {
-    const filtered =
+    const filteredByCategory =
       activeCategory === 'All'
         ? [...products]
         : products.filter((product) => product.category === activeCategory)
+
+    const filtered = normalizedQuery
+      ? filteredByCategory.filter((product) => {
+          const target = `${product.name} ${product.brand}`.toLowerCase()
+          return target.includes(normalizedQuery)
+        })
+      : filteredByCategory
 
     if (activeSort === 'price-asc') {
       filtered.sort((a, b) => a.price - b.price)
@@ -279,7 +306,20 @@ function ProductsPage({ likedIds, onToggleWishlist }) {
     }
 
     return filtered
-  }, [activeCategory, activeSort])
+  }, [activeCategory, activeSort, normalizedQuery])
+
+  function handleQueryChange(event) {
+    const nextQuery = event.target.value
+    const nextParams = new URLSearchParams(searchParams)
+
+    if (nextQuery.trim()) {
+      nextParams.set('q', nextQuery)
+    } else {
+      nextParams.delete('q')
+    }
+
+    setSearchParams(nextParams)
+  }
 
   return (
     <section className="page-panel products-page">
@@ -289,23 +329,36 @@ function ProductsPage({ likedIds, onToggleWishlist }) {
         description="카테고리를 누르면 URL이 바뀌고, 그 값에 맞는 상품만 보이도록 연결했습니다."
       />
 
-      <CategoryFilter activeCategory={activeCategory} activeSort={activeSort} />
+      <div className="search-toolbar">
+        <label className="search-field">
+          <span>상품 검색</span>
+          <input
+            onChange={handleQueryChange}
+            placeholder="브랜드 또는 상품명 검색"
+            type="search"
+            value={queryParam}
+          />
+        </label>
+      </div>
+
+      <CategoryFilter activeCategory={activeCategory} activeQuery={queryParam} activeSort={activeSort} />
 
       <div className="products-toolbar">
         <span>
           현재 카테고리: <strong>{activeCategory}</strong>
+          {normalizedQuery ? ` / 검색어: ${queryParam}` : ''}
         </span>
         <div className="toolbar-group">
           <span>총 {visibleProducts.length}개 상품</span>
           <div className="sort-tabs">
             {sortOptions.map((option) => (
-              <Link
-                className={`sort-chip ${activeSort === option.value ? 'active' : ''}`}
-                key={option.value}
-                to={buildProductsLink(activeCategory, option.value)}
-              >
-                {option.label}
-              </Link>
+                <Link
+                  className={`sort-chip ${activeSort === option.value ? 'active' : ''}`}
+                  key={option.value}
+                  to={buildProductsLink(activeCategory, option.value, queryParam)}
+                >
+                  {option.label}
+                </Link>
             ))}
           </div>
         </div>
@@ -321,6 +374,12 @@ function ProductsPage({ likedIds, onToggleWishlist }) {
           />
         ))}
       </div>
+      {visibleProducts.length === 0 ? (
+        <div className="empty-page search-empty-state">
+          <h1>검색 결과가 없습니다.</h1>
+          <span>다른 키워드나 카테고리 조합으로 다시 찾아보세요.</span>
+        </div>
+      ) : null}
     </section>
   )
 }
@@ -351,22 +410,22 @@ function ProductDetailPage({ likedIds, onAddToCart, onToggleWishlist }) {
         <WishlistButton active={isLiked} onToggle={() => onToggleWishlist(product.id)} />
       </div>
 
-        <div className="detail-copy">
-          <p className="detail-brand">{product.brand}</p>
-          <h1>{product.name}</h1>
-          <div className="detail-price-stack">
-            <div className="price-row">
-              <span className="discount-rate">{product.discountRate}%</span>
-              <strong>{formatPrice(product.price)}</strong>
-            </div>
-            <span className="original-price">{formatPrice(product.originalPrice)}</span>
+      <div className="detail-copy">
+        <p className="detail-brand">{product.brand}</p>
+        <h1>{product.name}</h1>
+        <div className="detail-price-stack">
+          <div className="price-row">
+            <span className="discount-rate">{product.discountRate}%</span>
+            <strong>{formatPrice(product.price)}</strong>
           </div>
-          <div className="detail-meta-strip">
-            <span>{product.delivery}</span>
-            <span>리뷰 {formatReviewCount(product.reviewCount)}개</span>
-            <span>{product.category}</span>
-          </div>
-          <p className="detail-description">{product.description}</p>
+          <span className="original-price">{formatPrice(product.originalPrice)}</span>
+        </div>
+        <div className="detail-meta-strip">
+          <span>{product.delivery}</span>
+          <span>리뷰 {formatReviewCount(product.reviewCount)}개</span>
+          <span>{product.category}</span>
+        </div>
+        <p className="detail-description">{product.description}</p>
 
         <div className="detail-block">
           <span className="detail-label">사이즈 선택</span>
@@ -407,10 +466,7 @@ function ProductDetailPage({ likedIds, onAddToCart, onToggleWishlist }) {
 }
 
 function CartPage({ cartItems, onDecreaseQuantity, onIncreaseQuantity, onRemoveCartItem }) {
-  const totalPrice = useMemo(
-    () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [cartItems],
-  )
+  const { shippingFee, subtotal, total } = useMemo(() => getOrderAmounts(cartItems), [cartItems])
 
   return (
     <section className="page-panel cart-page">
@@ -459,8 +515,23 @@ function CartPage({ cartItems, onDecreaseQuantity, onIncreaseQuantity, onRemoveC
 
           <aside className="order-summary">
             <p className="panel-label">Order Summary</p>
-            <h2>{formatPrice(totalPrice)}</h2>
+            <div className="summary-breakdown">
+              <div className="summary-line">
+                <span>상품 금액</span>
+                <strong>{formatPrice(subtotal)}</strong>
+              </div>
+              <div className="summary-line">
+                <span>배송비</span>
+                <strong>{shippingFee === 0 ? '무료' : formatPrice(shippingFee)}</strong>
+              </div>
+            </div>
+            <h2>{formatPrice(total)}</h2>
             <span>총 상품 수 {cartItems.reduce((sum, item) => sum + item.quantity, 0)}개</span>
+            <span>
+              {shippingFee === 0
+                ? '무료배송 기준을 충족했습니다.'
+                : `${formatPrice(FREE_SHIPPING_THRESHOLD)} 이상 구매 시 무료배송`}
+            </span>
             <Link className="filled-button full-width summary-link" to="/checkout">
               주문 계속하기
             </Link>
@@ -485,10 +556,7 @@ function CheckoutPage({ cartItems, onClearCart }) {
     () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
     [cartItems],
   )
-  const totalPrice = useMemo(
-    () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [cartItems],
-  )
+  const { shippingFee, subtotal, total } = useMemo(() => getOrderAmounts(cartItems), [cartItems])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -595,7 +663,7 @@ function CheckoutPage({ cartItems, onClearCart }) {
           </label>
 
           <button className="filled-button full-width" type="submit">
-            {formatPrice(totalPrice)} 결제하기
+            {formatPrice(total)} 결제하기
           </button>
         </form>
 
@@ -616,8 +684,16 @@ function CheckoutPage({ cartItems, onClearCart }) {
             ))}
           </div>
           <div className="checkout-total">
+            <div className="summary-line">
+              <span>상품 금액</span>
+              <strong>{formatPrice(subtotal)}</strong>
+            </div>
+            <div className="summary-line">
+              <span>배송비</span>
+              <strong>{shippingFee === 0 ? '무료' : formatPrice(shippingFee)}</strong>
+            </div>
             <span>총 상품 수 {totalQuantity}개</span>
-            <h2>{formatPrice(totalPrice)}</h2>
+            <h2>{formatPrice(total)}</h2>
           </div>
         </aside>
       </div>

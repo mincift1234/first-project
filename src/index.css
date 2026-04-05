@@ -588,6 +588,29 @@ button {
   color: rgba(17, 17, 17, 0.72);
 }
 
+.search-toolbar {
+  margin-bottom: 14px;
+}
+
+.search-field {
+  display: grid;
+  gap: 8px;
+  color: rgba(17, 17, 17, 0.76);
+  font-weight: 700;
+}
+
+.search-field input {
+  width: 100%;
+  max-width: 420px;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #111111;
+  font: inherit;
+}
+
 .toolbar-group,
 .sort-tabs {
   display: flex;
@@ -647,6 +670,25 @@ button {
   align-self: start;
   display: grid;
   gap: 12px;
+}
+
+.summary-breakdown {
+  display: grid;
+  gap: 10px;
+}
+
+.summary-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.summary-line:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .summary-link {
@@ -724,6 +766,10 @@ button {
   gap: 14px;
 }
 
+.search-empty-state {
+  margin-top: 6px;
+}
+
 .empty-page h1 {
   margin: 0;
   font-size: clamp(1.8rem, 4vw, 2.6rem);
@@ -782,6 +828,10 @@ button {
   .toolbar-group,
   .sort-tabs {
     display: grid;
+  }
+
+  .search-field input {
+    max-width: none;
   }
 
   .topnav {
