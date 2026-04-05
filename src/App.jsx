@@ -2,13 +2,21 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   BrowserRouter,
   Link,
+  Navigate,
   Route,
   Routes,
   useNavigate,
   useParams,
   useSearchParams,
 } from 'react-router-dom'
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth'
 import { categories, editorialPicks, products, rankings } from './data/products'
+import { auth, firebaseEnabled } from './firebase'
 
 const CART_STORAGE_KEY = 'thread-room-cart'
 const WISHLIST_STORAGE_KEY = 'thread-room-wishlist'
@@ -75,6 +83,26 @@ function getPaymentLabel(value) {
   }
 
   return '신용카드'
+}
+
+function getFirebaseMessage(code) {
+  if (code === 'auth/invalid-credential') {
+    return '이메일 또는 비밀번호를 다시 확인해주세요.'
+  }
+
+  if (code === 'auth/email-already-in-use') {
+    return '이미 가입된 이메일입니다.'
+  }
+
+  if (code === 'auth/weak-password') {
+    return '비밀번호는 6자 이상이어야 합니다.'
+  }
+
+  if (code === 'auth/invalid-email') {
+    return '이메일 형식이 올바르지 않습니다.'
+  }
+
+  return '인증 처리 중 오류가 발생했습니다.'
 }
 
 function SectionHeader({ label, title, description }) {
@@ -170,7 +198,7 @@ function CategoryFilter({ activeCategory, activeSort, activeQuery }) {
   )
 }
 
-function Layout({ cartCount, orderCount, wishlistCount, children }) {
+function Layout({ cartCount, orderCount, user, wishlistCount, onLogout, children }) {
   return (
     <main className="store-shell">
       <div className="noise-grid" />
@@ -186,12 +214,145 @@ function Layout({ cartCount, orderCount, wishlistCount, children }) {
           <Link to="/wishlist">LIKE ({wishlistCount})</Link>
           <Link to="/cart">CART ({cartCount})</Link>
           <Link to="/orders">ORDERS ({orderCount})</Link>
+          {user ? (
+            <>
+              <span className="user-pill">{user.email}</span>
+              <button className="topnav-button" onClick={onLogout} type="button">
+                LOGOUT
+              </button>
+            </>
+          ) : (
+            <Link to="/login">LOGIN</Link>
+          )}
         </nav>
       </header>
 
       {children}
     </main>
   )
+}
+
+function LoginPage({ user }) {
+  const navigate = useNavigate()
+  const [mode, setMode] = useState('login')
+  const [formState, setFormState] = useState({ email: '', password: '' })
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      navigate('/')
+    }
+  }, [navigate, user])
+
+  function handleChange(event) {
+    const { name, value } = event.target
+    setFormState((prev) => ({ ...prev, [name]: value }))
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+
+    if (!auth || !firebaseEnabled) {
+      setError('Firebase 환경 변수가 아직 설정되지 않았습니다.')
+      return
+    }
+
+    setIsSubmitting(true)
+    setError('')
+
+    try {
+      if (mode === 'login') {
+        await signInWithEmailAndPassword(auth, formState.email, formState.password)
+      } else {
+        await createUserWithEmailAndPassword(auth, formState.email, formState.password)
+      }
+      navigate('/')
+    } catch (firebaseError) {
+      setError(getFirebaseMessage(firebaseError.code))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <section className="page-panel auth-page">
+      <SectionHeader
+        label="Account"
+        title="Firebase 로그인"
+        description="이메일/비밀번호 기반 로그인부터 연결했습니다. Firebase Authentication의 Email/Password 제공자를 켜고 사용하면 됩니다."
+      />
+
+      <div className="auth-grid">
+        <form className="checkout-form auth-form" onSubmit={handleSubmit}>
+          <div className="auth-toggle">
+            <button
+              className={`sort-chip ${mode === 'login' ? 'active' : ''}`}
+              onClick={() => setMode('login')}
+              type="button"
+            >
+              로그인
+            </button>
+            <button
+              className={`sort-chip ${mode === 'signup' ? 'active' : ''}`}
+              onClick={() => setMode('signup')}
+              type="button"
+            >
+              회원가입
+            </button>
+          </div>
+
+          <label className="form-field">
+            <span>이메일</span>
+            <input
+              name="email"
+              onChange={handleChange}
+              placeholder="you@example.com"
+              required
+              type="email"
+              value={formState.email}
+            />
+          </label>
+          <label className="form-field">
+            <span>비밀번호</span>
+            <input
+              name="password"
+              onChange={handleChange}
+              placeholder="6자 이상"
+              required
+              type="password"
+              value={formState.password}
+            />
+          </label>
+
+          {error ? <p className="auth-error">{error}</p> : null}
+
+          <button className="filled-button full-width" disabled={isSubmitting} type="submit">
+            {isSubmitting ? '처리 중...' : mode === 'login' ? '로그인' : '회원가입'}
+          </button>
+        </form>
+
+        <aside className="order-summary auth-summary">
+          <p className="panel-label">Firebase Setup</p>
+          <div className="auth-checklist">
+            <span>1. `.env.example` 값을 `.env`로 복사</span>
+            <span>2. Firebase Console에서 프로젝트 생성</span>
+            <span>3. Authentication에서 Email/Password 활성화</span>
+            <span>4. Vite 개발 서버 재시작</span>
+          </div>
+          <span>{firebaseEnabled ? 'Firebase 설정이 감지되었습니다.' : 'Firebase 환경 변수가 아직 비어 있습니다.'}</span>
+        </aside>
+      </div>
+    </section>
+  )
+}
+
+function RequireAuth({ user, children }) {
+  if (!user) {
+    return <Navigate replace to="/login" />
+  }
+
+  return children
 }
 
 function HomePage({ likedIds, onToggleWishlist }) {
@@ -906,6 +1067,15 @@ export default function App() {
   const [cartItems, setCartItems] = useState(() => readStorage(CART_STORAGE_KEY, []))
   const [likedIds, setLikedIds] = useState(() => readStorage(WISHLIST_STORAGE_KEY, []))
   const [orders, setOrders] = useState(() => readStorage(ORDER_STORAGE_KEY, []))
+  const [user, setUser] = useState(null)
+
+  async function handleLogout() {
+    if (!auth) {
+      return
+    }
+
+    await signOut(auth)
+  }
 
   function handleAddToCart(product, size) {
     setCartItems((prev) => {
@@ -984,9 +1154,25 @@ export default function App() {
     window.localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orders))
   }, [orders])
 
+  useEffect(() => {
+    if (!auth) {
+      return undefined
+    }
+
+    return onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser)
+    })
+  }, [])
+
   return (
     <BrowserRouter>
-      <Layout cartCount={cartItems.length} orderCount={orders.length} wishlistCount={likedIds.length}>
+      <Layout
+        cartCount={cartItems.length}
+        onLogout={handleLogout}
+        orderCount={orders.length}
+        user={user}
+        wishlistCount={likedIds.length}
+      >
         <Routes>
           <Route
             element={<HomePage likedIds={likedIds} onToggleWishlist={handleToggleWishlist} />}
@@ -1010,28 +1196,40 @@ export default function App() {
             element={<WishlistPage likedIds={likedIds} onToggleWishlist={handleToggleWishlist} />}
             path="/wishlist"
           />
+          <Route element={<LoginPage user={user} />} path="/login" />
           <Route
             element={
-              <CartPage
-                cartItems={cartItems}
-                onDecreaseQuantity={handleDecreaseQuantity}
-                onIncreaseQuantity={handleIncreaseQuantity}
-                onRemoveCartItem={handleRemoveCartItem}
-              />
+              <RequireAuth user={user}>
+                <CartPage
+                  cartItems={cartItems}
+                  onDecreaseQuantity={handleDecreaseQuantity}
+                  onIncreaseQuantity={handleIncreaseQuantity}
+                  onRemoveCartItem={handleRemoveCartItem}
+                />
+              </RequireAuth>
             }
             path="/cart"
           />
           <Route
             element={
-              <CheckoutPage
-                cartItems={cartItems}
-                onClearCart={handleClearCart}
-                onPlaceOrder={handlePlaceOrder}
-              />
+              <RequireAuth user={user}>
+                <CheckoutPage
+                  cartItems={cartItems}
+                  onClearCart={handleClearCart}
+                  onPlaceOrder={handlePlaceOrder}
+                />
+              </RequireAuth>
             }
             path="/checkout"
           />
-          <Route element={<OrdersPage orders={orders} />} path="/orders" />
+          <Route
+            element={
+              <RequireAuth user={user}>
+                <OrdersPage orders={orders} />
+              </RequireAuth>
+            }
+            path="/orders"
+          />
         </Routes>
       </Layout>
     </BrowserRouter>
