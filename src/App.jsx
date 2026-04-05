@@ -12,6 +12,7 @@ import { categories, editorialPicks, products, rankings } from './data/products'
 
 const CART_STORAGE_KEY = 'thread-room-cart'
 const WISHLIST_STORAGE_KEY = 'thread-room-wishlist'
+const ORDER_STORAGE_KEY = 'thread-room-orders'
 
 const sortOptions = [
   { value: 'latest', label: '최신순' },
@@ -52,6 +53,28 @@ function getOrderAmounts(cartItems) {
     shippingFee,
     total: subtotal + shippingFee,
   }
+}
+
+function formatOrderDate(value) {
+  return new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
+}
+
+function getPaymentLabel(value) {
+  if (value === 'bank') {
+    return '무통장입금'
+  }
+
+  if (value === 'phone') {
+    return '휴대폰결제'
+  }
+
+  return '신용카드'
 }
 
 function SectionHeader({ label, title, description }) {
@@ -147,7 +170,7 @@ function CategoryFilter({ activeCategory, activeSort, activeQuery }) {
   )
 }
 
-function Layout({ cartCount, wishlistCount, children }) {
+function Layout({ cartCount, orderCount, wishlistCount, children }) {
   return (
     <main className="store-shell">
       <div className="noise-grid" />
@@ -162,6 +185,7 @@ function Layout({ cartCount, wishlistCount, children }) {
           <Link to="/products?category=Outer">OUTER</Link>
           <Link to="/wishlist">LIKE ({wishlistCount})</Link>
           <Link to="/cart">CART ({cartCount})</Link>
+          <Link to="/orders">ORDERS ({orderCount})</Link>
         </nav>
       </header>
 
@@ -567,7 +591,7 @@ function CartPage({ cartItems, onDecreaseQuantity, onIncreaseQuantity, onRemoveC
   )
 }
 
-function CheckoutPage({ cartItems, onClearCart }) {
+function CheckoutPage({ cartItems, onClearCart, onPlaceOrder }) {
   const navigate = useNavigate()
   const [formState, setFormState] = useState({
     name: '',
@@ -592,14 +616,22 @@ function CheckoutPage({ cartItems, onClearCart }) {
   function handleSubmit(event) {
     event.preventDefault()
 
-    if (cartItems.length === 0) {
-      navigate('/products')
-      return
-    }
+      if (cartItems.length === 0) {
+        navigate('/products')
+        return
+      }
 
-    setIsSubmitted(true)
-    onClearCart()
-  }
+      onPlaceOrder({
+        customerName: formState.name,
+        items: cartItems,
+        payment: formState.payment,
+        total,
+        shippingFee,
+        subtotal,
+      })
+      setIsSubmitted(true)
+      onClearCart()
+    }
 
   if (isSubmitted) {
     return (
@@ -756,7 +788,7 @@ function CheckoutPage({ cartItems, onClearCart }) {
             </div>
             <div className="summary-line">
               <span>결제 수단</span>
-              <strong>{formState.payment === 'card' ? '신용카드' : formState.payment === 'bank' ? '무통장입금' : '휴대폰결제'}</strong>
+              <strong>{getPaymentLabel(formState.payment)}</strong>
             </div>
             <span>총 상품 수 {totalQuantity}개</span>
             <h2>{formatPrice(total)}</h2>
@@ -801,9 +833,79 @@ function WishlistPage({ likedIds, onToggleWishlist }) {
   )
 }
 
+function OrdersPage({ orders }) {
+  return (
+    <section className="page-panel orders-page">
+      <SectionHeader
+        label="Orders"
+        title="주문 내역"
+        description="체크아웃 완료 시 로컬에 저장된 주문 내역을 다시 확인할 수 있도록 연결했습니다."
+      />
+
+      {orders.length === 0 ? (
+        <div className="empty-page">
+          <h1>아직 주문 내역이 없습니다.</h1>
+          <Link className="filled-button" to="/products">
+            상품 보러 가기
+          </Link>
+        </div>
+      ) : (
+        <div className="orders-list">
+          {orders.map((order) => (
+            <article className="order-card" key={order.id}>
+              <div className="order-card-head">
+                <div>
+                  <p className="detail-brand">ORDER #{order.id}</p>
+                  <h3>{order.customerName} 님 주문</h3>
+                </div>
+                <div className="order-head-meta">
+                  <span>{formatOrderDate(order.createdAt)}</span>
+                  <strong>{formatPrice(order.total)}</strong>
+                </div>
+              </div>
+
+              <div className="order-summary-grid">
+                <div className="summary-line">
+                  <span>상품 금액</span>
+                  <strong>{formatPrice(order.subtotal)}</strong>
+                </div>
+                <div className="summary-line">
+                  <span>배송비</span>
+                  <strong>{order.shippingFee === 0 ? '무료' : formatPrice(order.shippingFee)}</strong>
+                </div>
+                <div className="summary-line">
+                  <span>결제 수단</span>
+                  <strong>{getPaymentLabel(order.payment)}</strong>
+                </div>
+              </div>
+
+              <div className="order-items">
+                {order.items.map((item) => (
+                  <article className="order-item" key={`${order.id}-${item.cartId}`}>
+                    <div className={`cart-preview ${item.tone}`} />
+                    <div>
+                      <p className="detail-brand">{item.brand}</p>
+                      <h3>{item.name}</h3>
+                      <span>
+                        {item.size} / 수량 {item.quantity}
+                      </span>
+                    </div>
+                    <strong>{formatPrice(item.price * item.quantity)}</strong>
+                  </article>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function App() {
   const [cartItems, setCartItems] = useState(() => readStorage(CART_STORAGE_KEY, []))
   const [likedIds, setLikedIds] = useState(() => readStorage(WISHLIST_STORAGE_KEY, []))
+  const [orders, setOrders] = useState(() => readStorage(ORDER_STORAGE_KEY, []))
 
   function handleAddToCart(product, size) {
     setCartItems((prev) => {
@@ -859,6 +961,17 @@ export default function App() {
     setCartItems([])
   }
 
+  function handlePlaceOrder(order) {
+    setOrders((prev) => [
+      {
+        ...order,
+        createdAt: new Date().toISOString(),
+        id: String(Date.now()).slice(-6),
+      },
+      ...prev,
+    ])
+  }
+
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems))
   }, [cartItems])
@@ -867,9 +980,13 @@ export default function App() {
     window.localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(likedIds))
   }, [likedIds])
 
+  useEffect(() => {
+    window.localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orders))
+  }, [orders])
+
   return (
     <BrowserRouter>
-      <Layout cartCount={cartItems.length} wishlistCount={likedIds.length}>
+      <Layout cartCount={cartItems.length} orderCount={orders.length} wishlistCount={likedIds.length}>
         <Routes>
           <Route
             element={<HomePage likedIds={likedIds} onToggleWishlist={handleToggleWishlist} />}
@@ -905,9 +1022,16 @@ export default function App() {
             path="/cart"
           />
           <Route
-            element={<CheckoutPage cartItems={cartItems} onClearCart={handleClearCart} />}
+            element={
+              <CheckoutPage
+                cartItems={cartItems}
+                onClearCart={handleClearCart}
+                onPlaceOrder={handlePlaceOrder}
+              />
+            }
             path="/checkout"
           />
+          <Route element={<OrdersPage orders={orders} />} path="/orders" />
         </Routes>
       </Layout>
     </BrowserRouter>
