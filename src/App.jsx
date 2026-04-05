@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BrowserRouter, Link, Route, Routes, useParams, useSearchParams } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Link,
+  Route,
+  Routes,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 import { categories, editorialPicks, products, rankings } from './data/products'
 
 const CART_STORAGE_KEY = 'thread-room-cart'
@@ -425,12 +433,166 @@ function CartPage({ cartItems, onDecreaseQuantity, onIncreaseQuantity, onRemoveC
             <p className="panel-label">Order Summary</p>
             <h2>{formatPrice(totalPrice)}</h2>
             <span>총 상품 수 {cartItems.reduce((sum, item) => sum + item.quantity, 0)}개</span>
-            <button className="filled-button full-width" type="button">
+            <Link className="filled-button full-width summary-link" to="/checkout">
               주문 계속하기
-            </button>
+            </Link>
           </aside>
         </div>
       )}
+    </section>
+  )
+}
+
+function CheckoutPage({ cartItems, onClearCart }) {
+  const navigate = useNavigate()
+  const [formState, setFormState] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    note: '',
+  })
+  const [isSubmitted, setIsSubmitted] = useState(false)
+
+  const totalQuantity = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    [cartItems],
+  )
+  const totalPrice = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [cartItems],
+  )
+
+  function handleChange(event) {
+    const { name, value } = event.target
+    setFormState((prev) => ({ ...prev, [name]: value }))
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+
+    if (cartItems.length === 0) {
+      navigate('/products')
+      return
+    }
+
+    setIsSubmitted(true)
+    onClearCart()
+  }
+
+  if (isSubmitted) {
+    return (
+      <section className="page-panel checkout-page">
+        <div className="checkout-success">
+          <p className="panel-label">Order Complete</p>
+          <h1>주문이 접수되었습니다.</h1>
+          <span>{formState.name || '고객'} 님의 주문을 준비 중입니다.</span>
+          <div className="detail-actions">
+            <Link className="filled-button" to="/">
+              홈으로 이동
+            </Link>
+            <Link className="ghost-dark-button" to="/products">
+              다른 상품 보기
+            </Link>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <section className="page-panel checkout-page">
+        <div className="empty-page">
+          <h1>주문할 상품이 없습니다.</h1>
+          <Link className="filled-button" to="/products">
+            상품 보러 가기
+          </Link>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="page-panel checkout-page">
+      <SectionHeader
+        label="Checkout"
+        title="배송 정보 입력"
+        description="장바구니에서 넘어온 상품을 확인하고 기본적인 주문 흐름까지 이어지도록 구성했습니다."
+      />
+
+      <div className="checkout-grid">
+        <form className="checkout-form" onSubmit={handleSubmit}>
+          <label className="form-field">
+            <span>받는 분</span>
+            <input
+              name="name"
+              onChange={handleChange}
+              placeholder="홍길동"
+              required
+              type="text"
+              value={formState.name}
+            />
+          </label>
+          <label className="form-field">
+            <span>연락처</span>
+            <input
+              name="phone"
+              onChange={handleChange}
+              placeholder="010-0000-0000"
+              required
+              type="tel"
+              value={formState.phone}
+            />
+          </label>
+          <label className="form-field">
+            <span>배송 주소</span>
+            <input
+              name="address"
+              onChange={handleChange}
+              placeholder="서울시 성동구..."
+              required
+              type="text"
+              value={formState.address}
+            />
+          </label>
+          <label className="form-field">
+            <span>배송 메모</span>
+            <textarea
+              name="note"
+              onChange={handleChange}
+              placeholder="문 앞에 놓아주세요"
+              rows="4"
+              value={formState.note}
+            />
+          </label>
+
+          <button className="filled-button full-width" type="submit">
+            {formatPrice(totalPrice)} 결제하기
+          </button>
+        </form>
+
+        <aside className="order-summary checkout-summary">
+          <p className="panel-label">Order Items</p>
+          <div className="checkout-lines">
+            {cartItems.map((item) => (
+              <article className="checkout-line" key={item.cartId}>
+                <div>
+                  <p className="detail-brand">{item.brand}</p>
+                  <h3>{item.name}</h3>
+                  <span>
+                    {item.size} / 수량 {item.quantity}
+                  </span>
+                </div>
+                <strong>{formatPrice(item.price * item.quantity)}</strong>
+              </article>
+            ))}
+          </div>
+          <div className="checkout-total">
+            <span>총 상품 수 {totalQuantity}개</span>
+            <h2>{formatPrice(totalPrice)}</h2>
+          </div>
+        </aside>
+      </div>
     </section>
   )
 }
@@ -474,19 +636,29 @@ export default function App() {
   const [likedIds, setLikedIds] = useState(() => readStorage(WISHLIST_STORAGE_KEY, []))
 
   function handleAddToCart(product, size) {
-    setCartItems((prev) => [
-      ...prev,
-      {
-        cartId: `${product.id}-${size}-${prev.length + 1}`,
-        id: product.id,
-        name: product.name,
-        brand: product.brand,
-        price: product.price,
-        quantity: 1,
-        size,
-        tone: product.tone,
-      },
-    ])
+    setCartItems((prev) => {
+      const existingItem = prev.find((item) => item.id === product.id && item.size === size)
+
+      if (existingItem) {
+        return prev.map((item) =>
+          item.cartId === existingItem.cartId ? { ...item, quantity: item.quantity + 1 } : item,
+        )
+      }
+
+      return [
+        ...prev,
+        {
+          cartId: `${product.id}-${size}`,
+          id: product.id,
+          name: product.name,
+          brand: product.brand,
+          price: product.price,
+          quantity: 1,
+          size,
+          tone: product.tone,
+        },
+      ]
+    })
   }
 
   function handleToggleWishlist(productId) {
@@ -511,6 +683,10 @@ export default function App() {
 
   function handleRemoveCartItem(cartId) {
     setCartItems((prev) => prev.filter((item) => item.cartId !== cartId))
+  }
+
+  function handleClearCart() {
+    setCartItems([])
   }
 
   useEffect(() => {
@@ -557,6 +733,10 @@ export default function App() {
               />
             }
             path="/cart"
+          />
+          <Route
+            element={<CheckoutPage cartItems={cartItems} onClearCart={handleClearCart} />}
+            path="/checkout"
           />
         </Routes>
       </Layout>
