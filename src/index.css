@@ -550,10 +550,24 @@ button {
   line-height: 1.7;
 }
 
+.detail-page-shell {
+  display: grid;
+  gap: 28px;
+}
+
 .detail-block {
   display: grid;
   gap: 14px;
   margin-top: 12px;
+}
+
+.related-section {
+  display: grid;
+  gap: 6px;
+}
+
+.related-grid {
+  margin-top: 4px;
 }
 
 .size-grid {
@@ -729,6 +743,54 @@ button {
   resize: vertical;
 }
 
+.payment-fieldset {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.payment-fieldset legend {
+  padding: 0;
+  color: rgba(17, 17, 17, 0.76);
+  font-weight: 700;
+}
+
+.payment-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.payment-option {
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+  font-weight: 700;
+}
+
+.payment-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.payment-option.active {
+  border-color: rgba(17, 17, 17, 0.52);
+  background: rgba(17, 17, 17, 0.08);
+}
+
+.payment-option:hover {
+  transform: translateY(-2px);
+}
+
 .checkout-summary,
 .checkout-lines,
 .checkout-total {
@@ -788,7 +850,8 @@ button {
   .editorial-grid,
   .product-detail-page,
   .cart-page-grid,
-  .checkout-grid {
+  .checkout-grid,
+  .payment-options {
     grid-template-columns: 1fr;
   }
 

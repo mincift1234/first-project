@@ -402,65 +402,90 @@ function ProductDetailPage({ likedIds, onAddToCart, onToggleWishlist }) {
 
   const size = selectedSize || product.sizes[0]
   const isLiked = likedIds.includes(product.id)
+  const relatedProducts = products
+    .filter((item) => item.category === product.category && item.id !== product.id)
+    .slice(0, 3)
 
   return (
-    <section className="page-panel product-detail-page">
-      <div className={`detail-thumb ${product.tone}`}>
-        <span className="product-badge">{product.badge}</span>
-        <WishlistButton active={isLiked} onToggle={() => onToggleWishlist(product.id)} />
+    <section className="page-panel detail-page-shell">
+      <div className="product-detail-page">
+        <div className={`detail-thumb ${product.tone}`}>
+          <span className="product-badge">{product.badge}</span>
+          <WishlistButton active={isLiked} onToggle={() => onToggleWishlist(product.id)} />
+        </div>
+
+        <div className="detail-copy">
+          <p className="detail-brand">{product.brand}</p>
+          <h1>{product.name}</h1>
+          <div className="detail-price-stack">
+            <div className="price-row">
+              <span className="discount-rate">{product.discountRate}%</span>
+              <strong>{formatPrice(product.price)}</strong>
+            </div>
+            <span className="original-price">{formatPrice(product.originalPrice)}</span>
+          </div>
+          <div className="detail-meta-strip">
+            <span>{product.delivery}</span>
+            <span>리뷰 {formatReviewCount(product.reviewCount)}개</span>
+            <span>{product.category}</span>
+          </div>
+          <p className="detail-description">{product.description}</p>
+
+          <div className="detail-block">
+            <span className="detail-label">사이즈 선택</span>
+            <div className="size-grid">
+              {product.sizes.map((item) => (
+                <button
+                  className={`size-chip ${size === item ? 'active' : ''}`}
+                  key={item}
+                  onClick={() => setSelectedSize(item)}
+                  type="button"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="detail-block">
+            <span className="detail-label">상품 포인트</span>
+            <ul className="detail-list">
+              {product.details.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="detail-actions">
+            <button className="filled-button" onClick={() => onAddToCart(product, size)} type="button">
+              장바구니 담기
+            </button>
+            <Link className="ghost-dark-button" to="/cart">
+              장바구니 보기
+            </Link>
+          </div>
+        </div>
       </div>
 
-      <div className="detail-copy">
-        <p className="detail-brand">{product.brand}</p>
-        <h1>{product.name}</h1>
-        <div className="detail-price-stack">
-          <div className="price-row">
-            <span className="discount-rate">{product.discountRate}%</span>
-            <strong>{formatPrice(product.price)}</strong>
-          </div>
-          <span className="original-price">{formatPrice(product.originalPrice)}</span>
-        </div>
-        <div className="detail-meta-strip">
-          <span>{product.delivery}</span>
-          <span>리뷰 {formatReviewCount(product.reviewCount)}개</span>
-          <span>{product.category}</span>
-        </div>
-        <p className="detail-description">{product.description}</p>
-
-        <div className="detail-block">
-          <span className="detail-label">사이즈 선택</span>
-          <div className="size-grid">
-            {product.sizes.map((item) => (
-              <button
-                className={`size-chip ${size === item ? 'active' : ''}`}
-                key={item}
-                onClick={() => setSelectedSize(item)}
-                type="button"
-              >
-                {item}
-              </button>
+      {relatedProducts.length > 0 ? (
+        <section className="related-section">
+          <SectionHeader
+            label="Related Items"
+            title={`${product.category} 카테고리 추천`}
+            description="같은 무드로 함께 둘러보기 좋은 상품을 상세 하단에 연결했습니다."
+          />
+          <div className="product-grid product-grid-wide related-grid">
+            {relatedProducts.map((item) => (
+              <ProductCard
+                isLiked={likedIds.includes(item.id)}
+                key={item.id}
+                onToggleWishlist={onToggleWishlist}
+                product={item}
+              />
             ))}
           </div>
-        </div>
-
-        <div className="detail-block">
-          <span className="detail-label">상품 포인트</span>
-          <ul className="detail-list">
-            {product.details.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="detail-actions">
-          <button className="filled-button" onClick={() => onAddToCart(product, size)} type="button">
-            장바구니 담기
-          </button>
-          <Link className="ghost-dark-button" to="/cart">
-            장바구니 보기
-          </Link>
-        </div>
-      </div>
+        </section>
+      ) : null}
     </section>
   )
 }
@@ -549,6 +574,7 @@ function CheckoutPage({ cartItems, onClearCart }) {
     phone: '',
     address: '',
     note: '',
+    payment: 'card',
   })
   const [isSubmitted, setIsSubmitted] = useState(false)
 
@@ -662,6 +688,42 @@ function CheckoutPage({ cartItems, onClearCart }) {
             />
           </label>
 
+          <fieldset className="payment-fieldset">
+            <legend>결제 수단</legend>
+            <div className="payment-options">
+              <label className={`payment-option ${formState.payment === 'card' ? 'active' : ''}`}>
+                <input
+                  checked={formState.payment === 'card'}
+                  name="payment"
+                  onChange={handleChange}
+                  type="radio"
+                  value="card"
+                />
+                <span>신용카드</span>
+              </label>
+              <label className={`payment-option ${formState.payment === 'bank' ? 'active' : ''}`}>
+                <input
+                  checked={formState.payment === 'bank'}
+                  name="payment"
+                  onChange={handleChange}
+                  type="radio"
+                  value="bank"
+                />
+                <span>무통장입금</span>
+              </label>
+              <label className={`payment-option ${formState.payment === 'phone' ? 'active' : ''}`}>
+                <input
+                  checked={formState.payment === 'phone'}
+                  name="payment"
+                  onChange={handleChange}
+                  type="radio"
+                  value="phone"
+                />
+                <span>휴대폰결제</span>
+              </label>
+            </div>
+          </fieldset>
+
           <button className="filled-button full-width" type="submit">
             {formatPrice(total)} 결제하기
           </button>
@@ -691,6 +753,10 @@ function CheckoutPage({ cartItems, onClearCart }) {
             <div className="summary-line">
               <span>배송비</span>
               <strong>{shippingFee === 0 ? '무료' : formatPrice(shippingFee)}</strong>
+            </div>
+            <div className="summary-line">
+              <span>결제 수단</span>
+              <strong>{formState.payment === 'card' ? '신용카드' : formState.payment === 'bank' ? '무통장입금' : '휴대폰결제'}</strong>
             </div>
             <span>총 상품 수 {totalQuantity}개</span>
             <h2>{formatPrice(total)}</h2>
