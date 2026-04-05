@@ -36,6 +36,10 @@ function formatPrice(value) {
   return new Intl.NumberFormat('ko-KR').format(value) + '원'
 }
 
+function formatReviewCount(value) {
+  return new Intl.NumberFormat('ko-KR').format(value)
+}
+
 function SectionHeader({ label, title, description }) {
   return (
     <header className="section-header">
@@ -64,6 +68,10 @@ function ProductCard({ product, isLiked, onToggleWishlist }) {
     <article className="product-card">
       <div className={`product-thumb ${product.tone}`}>
         <span className="product-badge">{product.badge}</span>
+        <div className="product-thumb-meta">
+          <span>{product.delivery}</span>
+          <span>리뷰 {formatReviewCount(product.reviewCount)}</span>
+        </div>
         <WishlistButton
           active={isLiked}
           onToggle={(event) => {
@@ -76,7 +84,14 @@ function ProductCard({ product, isLiked, onToggleWishlist }) {
       <div className="product-copy">
         <p>{product.brand}</p>
         <h3>{product.name}</h3>
-        <strong>{formatPrice(product.price)}</strong>
+        <div className="price-row">
+          <span className="discount-rate">{product.discountRate}%</span>
+          <strong>{formatPrice(product.price)}</strong>
+        </div>
+        <div className="product-meta-row">
+          <span className="original-price">{formatPrice(product.originalPrice)}</span>
+          <span>{product.delivery}</span>
+        </div>
       </div>
     </article>
   )
@@ -138,6 +153,8 @@ function Layout({ cartCount, wishlistCount, children }) {
 }
 
 function HomePage({ likedIds, onToggleWishlist }) {
+  const featuredProducts = products.slice(0, 6)
+
   return (
     <>
       <section className="hero-banner">
@@ -187,16 +204,16 @@ function HomePage({ likedIds, onToggleWishlist }) {
       <section className="content-grid">
         <div className="main-column">
           <section className="section-block">
-            <SectionHeader
-              label="New Arrivals"
-              title="지금 메인에 보여줄 상품 카드"
-              description="카드를 누르면 상세 페이지로 이동하도록 연결했습니다."
-            />
-            <div className="product-grid">
-              {products.map((product) => (
-                <ProductCard
-                  isLiked={likedIds.includes(product.id)}
-                  key={product.id}
+              <SectionHeader
+                label="New Arrivals"
+                title="지금 메인에 보여줄 상품 카드"
+                description="가격, 할인율, 리뷰 수, 배송 메타를 같이 보여주도록 상품 카드 밀도를 높였습니다."
+              />
+              <div className="product-grid">
+                {featuredProducts.map((product) => (
+                  <ProductCard
+                    isLiked={likedIds.includes(product.id)}
+                    key={product.id}
                   onToggleWishlist={onToggleWishlist}
                   product={product}
                 />
@@ -334,11 +351,22 @@ function ProductDetailPage({ likedIds, onAddToCart, onToggleWishlist }) {
         <WishlistButton active={isLiked} onToggle={() => onToggleWishlist(product.id)} />
       </div>
 
-      <div className="detail-copy">
-        <p className="detail-brand">{product.brand}</p>
-        <h1>{product.name}</h1>
-        <strong>{formatPrice(product.price)}</strong>
-        <p className="detail-description">{product.description}</p>
+        <div className="detail-copy">
+          <p className="detail-brand">{product.brand}</p>
+          <h1>{product.name}</h1>
+          <div className="detail-price-stack">
+            <div className="price-row">
+              <span className="discount-rate">{product.discountRate}%</span>
+              <strong>{formatPrice(product.price)}</strong>
+            </div>
+            <span className="original-price">{formatPrice(product.originalPrice)}</span>
+          </div>
+          <div className="detail-meta-strip">
+            <span>{product.delivery}</span>
+            <span>리뷰 {formatReviewCount(product.reviewCount)}개</span>
+            <span>{product.category}</span>
+          </div>
+          <p className="detail-description">{product.description}</p>
 
         <div className="detail-block">
           <span className="detail-label">사이즈 선택</span>

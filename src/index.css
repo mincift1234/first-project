@@ -390,6 +390,30 @@ button {
   font-weight: 700;
 }
 
+.product-thumb-meta {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.product-thumb-meta span,
+.detail-meta-strip span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #faf7f1;
+  background: rgba(17, 17, 17, 0.54);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .wishlist-button {
   position: absolute;
   top: 14px;
@@ -431,6 +455,32 @@ button {
 
 .product-copy h3 {
   font-size: 1.15rem;
+}
+
+.price-row,
+.product-meta-row,
+.detail-price-stack,
+.detail-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.discount-rate {
+  color: #b84a2e;
+  font-weight: 800;
+}
+
+.original-price {
+  color: rgba(17, 17, 17, 0.42);
+  text-decoration: line-through;
+}
+
+.product-meta-row {
+  color: rgba(17, 17, 17, 0.58);
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .editorial-grid {
@@ -484,6 +534,15 @@ button {
 .detail-copy strong {
   display: block;
   font-size: 1.5rem;
+}
+
+.detail-price-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.detail-meta-strip {
+  margin-top: 2px;
 }
 
 .detail-description {
@@ -689,6 +748,10 @@ button {
 
   .hero-copy h1 {
     max-width: none;
+  }
+
+  .product-thumb {
+    min-height: 280px;
   }
 
   .detail-thumb {
